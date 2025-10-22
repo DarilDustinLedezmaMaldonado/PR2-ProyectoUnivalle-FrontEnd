@@ -10,18 +10,7 @@ const universidades = [
   "EMI (Escuela Militar de Ingeniería)",
 ];
 
-const hobbiesDisponibles = [
-  "Lectura",
-  "Música",
-  "Programación",
-  "Deportes",
-  "Videojuegos",
-  "Fotografía",
-  "Pintura/Dibujo",
-  "Escritura creativa",
-  "Viajar",
-  "Ciencia/Tecnología",
-];
+// (Se removió `hobbiesDisponibles` porque no se utiliza actualmente)
 
 const temas = [
   { id: "azul-morado", label: "Azul-Morado", color: "bg-gradient-to-r from-indigo-500 to-purple-500" },
