@@ -25,7 +25,6 @@ const SidebarNavigation: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) =>
     { id: 3, icon: <FiBell className="w-5 h-5" />, label: "Notificaciones", onClick: () => navigate("/notificaciones") },
     { id: 4, icon: <FiUsers className="w-5 h-5" />, label: "Usuarios", onClick: () => navigate("/usuarios") },
     { id: 5, icon: <FiUser className="w-5 h-5" />, label: "Mi Perfil", onClick: handleNavigateProfile },
-    { id: 6, icon: <FiLogOut className="w-5 h-5" />, label: "Cerrar sesión", onClick: handleLogout },
   ];
 
   const user = JSON.parse(localStorage.getItem('user') || '{}');
@@ -63,26 +62,42 @@ const SidebarNavigation: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) =>
           <p className="text-sm text-gray-500 dark:text-gray-400">{user.email || "correo@ejemplo.com"}</p>
         </div>
 
-        {/* Navegación */}
-        <nav className="px-4 py-6">
-          <ul className="space-y-2">
-            {menuItems.map((item) => (
-              <li key={item.id}>
-                <button
-                  onClick={item.onClick}
-                  className="flex items-center w-full px-4 py-3 text-left text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200 group"
-                >
-                  <span className="group-hover:text-[var(--color-primary)] dark:group-hover:text-blue-400">
-                    {item.icon}
-                  </span>
-                  <span className="ml-3 font-medium group-hover:text-[var(--color-primary)] dark:group-hover:text-blue-400">
-                    {item.label}
-                  </span>
-                </button>
-              </li>
-            ))}
-          </ul>
-        </nav>
+        {/* Navegación con scroll y espacio para logout */}
+        <div className="flex flex-col h-[calc(100vh-180px)]">
+          <nav className="flex-1 overflow-y-auto px-4 py-6">
+            <ul className="space-y-2">
+              {menuItems.map((item) => (
+                <li key={item.id}>
+                  <button
+                    onClick={item.onClick}
+                    className="flex items-center w-full px-4 py-3 text-left text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200 group"
+                  >
+                    <span className="group-hover:text-[var(--color-primary)] dark:group-hover:text-blue-400">
+                      {item.icon}
+                    </span>
+                    <span className="ml-3 font-medium group-hover:text-[var(--color-primary)] dark:group-hover:text-blue-400">
+                      {item.label}
+                    </span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </nav>
+          {/* Botón de logout fijo abajo */}
+          <div className="px-4 pb-6">
+            <button
+              onClick={handleLogout}
+              className="flex items-center w-full px-4 py-3 text-left text-red-600 dark:text-red-400 rounded-lg hover:bg-red-100 dark:hover:bg-red-700 transition-colors duration-200 group"
+            >
+              <span className="group-hover:text-red-700 dark:group-hover:text-red-300">
+                <FiLogOut className="w-5 h-5" />
+              </span>
+              <span className="ml-3 font-medium group-hover:text-red-700 dark:group-hover:text-red-300">
+                Cerrar sesión
+              </span>
+            </button>
+          </div>
+        </div>
       </aside>
     </>
   );
