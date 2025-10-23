@@ -7,8 +7,8 @@ const CrearRepositorioPage: React.FC = () => {
   const [formData, setFormData] = useState({
     name: "",
     description: "",
-    type: "Simple",
-    privacy: "Público",
+    type: "simple", // cambiado a minúsculas
+    privacy: "public", // cambiado a inglés y minúsculas
     areaInteres: [] as string[],
     areaGeografica: [] as string[],
     sectorAporte: [] as string[],
@@ -44,7 +44,17 @@ const CrearRepositorioPage: React.FC = () => {
 
   const handleSubmit = async () => {
     try {
-      await api.post('/api/repositorios', formData);
+      const dataToSend = {
+        name: formData.name,
+        description: formData.description,
+        typeRepo: formData.type,
+        privacy: formData.privacy.toLowerCase(), // Convertir 'Público'/'Privado' a 'public'/'private'
+        interestAreas: formData.areaInteres,
+        geoAreas: formData.areaGeografica,
+        sectors: formData.sectorAporte
+      };
+      
+      await api.post('/api/repositorios', dataToSend);
       alert('Repositorio creado correctamente');
       navigate('/mis-repositorios');
     } catch (err: any) {
@@ -107,8 +117,8 @@ const CrearRepositorioPage: React.FC = () => {
                 onChange={(e) => handleChange("privacy", e.target.value)}
                 className="w-full border rounded-md px-3 py-2 focus:ring-2 focus:ring-pink-500"
               >
-                <option value="Público">Público</option>
-                <option value="Privado">Privado</option>
+                <option value="public">Público</option>
+                <option value="private">Privado</option>
               </select>
             </div>
           </div>
