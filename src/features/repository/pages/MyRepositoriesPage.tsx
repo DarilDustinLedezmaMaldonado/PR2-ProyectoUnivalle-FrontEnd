@@ -1,12 +1,14 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import api from "../../../utils/api";
+import RepositoryCard from "../components/RepositoryCard";
 
 interface Repository {
   _id: string;
   name: string;
   description?: string;
   type: string;
+  privacy?: string;
   owner: string;
   members: string[];
   createdAt: string;
@@ -30,7 +32,7 @@ const MyRepositoriesPage: React.FC = () => {
   }, []);
 
   return (
-    <div className="min-h-screen p-6 bg-white max-w-5xl mx-auto">
+    <div className="min-h-screen p-6 bg-gray-50 max-w-6xl mx-auto">
       <div className="flex items-center mb-6">
         <h1 className="text-3xl font-bold">Mis Repositorios</h1>
         <div className="ml-auto">
@@ -44,18 +46,20 @@ const MyRepositoriesPage: React.FC = () => {
       </div>
 
       {/* Lista de repositorios */}
-      <div className="mt-10">
+      <div className="mt-6 bg-white dark:bg-gray-900 rounded-2xl p-6 shadow-sm">
         <h2 className="text-2xl font-semibold mb-4">Repositorios existentes</h2>
-        <div className="grid gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {repositorios.map((repo) => (
-            <Link to={`/repositorio/${repo._id}`} key={repo._id}>
-              <div className="bg-white p-4 rounded shadow hover:bg-gray-50 cursor-pointer transition">
-                <h3 className="text-xl font-bold text-gray-800">{repo.name}</h3>
-                <p className="text-sm text-gray-600">{repo.description || "Sin descripción"}</p>
-                <p className="text-xs text-gray-500">Tipo: {repo.type}</p>
-                <p className="text-xs text-gray-500">Participantes: {repo.members.length}</p>
-              </div>
-            </Link>
+            <RepositoryCard
+              key={repo._id}
+              id={repo._id}
+              name={repo.name}
+              description={repo.description}
+              membersCount={repo.members.length}
+              filesCount={8} // placeholder until files endpoint used
+              privacy={repo.privacy || repo.type}
+              recentActivity={`Juan Carlos actualizó la documentación ayer`}
+            />
           ))}
 
           {repositorios.length === 0 && (
