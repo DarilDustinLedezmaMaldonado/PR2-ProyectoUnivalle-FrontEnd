@@ -25,6 +25,8 @@ const SidebarNavigation: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) =>
     { id: 3, icon: <FiBell className="w-5 h-5" />, label: "Notificaciones", onClick: () => navigate("/notificaciones") },
     { id: 4, icon: <FiUsers className="w-5 h-5" />, label: "Usuarios", onClick: () => navigate("/usuarios") },
     { id: 5, icon: <FiUser className="w-5 h-5" />, label: "Mi Perfil", onClick: handleNavigateProfile },
+    { id: 5, icon: <FiUser className="w-5 h-5" />, label: "Mi Perfil", onClick: handleNavigateProfile },
+    { id: 5, icon: <FiUser className="w-5 h-5" />, label: "Mi Perfil", onClick: handleNavigateProfile },
   ];
 
   const user = JSON.parse(localStorage.getItem('user') || '{}');
