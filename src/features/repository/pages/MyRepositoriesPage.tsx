@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import api from "../../../utils/api";
 
 interface Repository {
   _id: string;
@@ -15,19 +16,12 @@ const MyRepositoriesPage: React.FC = () => {
   const [repositorios, setRepositorios] = useState<Repository[]>([]);
 
   const fetchRepositorios = async () => {
-    const token = localStorage.getItem("token");
     try {
-      const res = await fetch("http://localhost:5000/api/repositorios/mis-repositorios", {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message);
-      setRepositorios(data);
-    } catch (err) {
+      const res = await api.get("/api/repositorios/mis-repositorios");
+      setRepositorios(res.data);
+    } catch (err: any) {
       console.error(err);
-      alert("Error al cargar los repositorios.");
+      alert(err?.response?.data?.message || "Error al cargar los repositorios.");
     }
   };
 
