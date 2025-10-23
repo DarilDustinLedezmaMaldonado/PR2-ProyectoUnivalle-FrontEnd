@@ -27,7 +27,13 @@ const CreateRepositoryForm: React.FC<Props> = ({ onSuccess }) => {
       return;
     }
     try {
-      await api.post('/api/repositorios', { name, description, type, memberEmails });
+      await api.post('/api/repositorios', { 
+        name, 
+        description, 
+        typeRepo: type,  // Cambiado de type a typeRepo para coincidir con el backend
+        privacy: type,   // Usando el mismo valor para privacy
+        memberEmails 
+      });
       alert('✅ Repositorio creado correctamente.');
       onSuccess();
     } catch (err: any) {
