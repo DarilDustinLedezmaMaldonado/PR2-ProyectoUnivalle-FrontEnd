@@ -1,4 +1,5 @@
 import React from 'react';
+import './Sidebar.css';
 import { FiHome, FiFolder, FiLogOut, FiBell, FiUser, FiUsers } from 'react-icons/fi';
 import { useNavigate } from "react-router-dom";
 
@@ -67,7 +68,7 @@ const SidebarNavigation: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) =>
 
         {/* Navegación con scroll y botón de logout fijo abajo */}
         <div className="flex flex-col h-[calc(100vh-180px)]">
-          <nav className="flex-1 overflow-y-auto px-4 py-6">
+          <nav className="flex-1 overflow-y-auto px-4 py-6 custom-scrollbar">
             <ul className="space-y-2">
               {menuItems.map((item) => (
                 <li key={item.id}>
