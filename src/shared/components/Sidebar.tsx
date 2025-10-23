@@ -31,6 +31,7 @@ const SidebarNavigation: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) =>
 
   return (
     <>
+      {/* Fondo oscuro solo en móvil cuando está abierto */}
       {isOpen && (
         <div
           className="fixed inset-0 bg-[rgba(0,0,0,0.4)] z-30 lg:hidden"
@@ -40,7 +41,7 @@ const SidebarNavigation: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) =>
 
       <aside
         className={`fixed top-0 left-0 z-40 h-screen w-64 bg-white dark:bg-gray-800 shadow-lg transform transition-transform duration-300 ease-in-out
-        ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}
+        ${isOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0`}
       >
         {/* Perfil */}
         <div
@@ -62,7 +63,7 @@ const SidebarNavigation: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) =>
           <p className="text-sm text-gray-500 dark:text-gray-400">{user.email || "correo@ejemplo.com"}</p>
         </div>
 
-        {/* Navegación con scroll y espacio para logout */}
+        {/* Navegación con scroll y botón de logout fijo abajo */}
         <div className="flex flex-col h-[calc(100vh-180px)]">
           <nav className="flex-1 overflow-y-auto px-4 py-6">
             <ul className="space-y-2">
