@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import api from "../utils/api";
 
 const CrearRepositorioPage: React.FC = () => {
   const navigate = useNavigate();
@@ -43,24 +44,12 @@ const CrearRepositorioPage: React.FC = () => {
 
   const handleSubmit = async () => {
     try {
-      const token = localStorage.getItem("token");
-      const res = await fetch("http://localhost:5000/api/repositorios", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(formData),
-      });
-
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message);
-
-      alert("Repositorio creado correctamente");
-      navigate("/mis-repositorios");
-    } catch (err) {
-      console.error(err);
-      alert("Error al crear el repositorio");
+      await api.post('/api/repositorios', formData);
+      alert('Repositorio creado correctamente');
+      navigate('/mis-repositorios');
+    } catch (err: any) {
+      console.error('Error al crear repositorio', err);
+      alert(err?.response?.data?.message || 'Error al crear el repositorio');
     }
   };
 

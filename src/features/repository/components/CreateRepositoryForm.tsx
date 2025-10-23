@@ -27,11 +27,11 @@ const CreateRepositoryForm: React.FC<Props> = ({ onSuccess }) => {
       return;
     }
     try {
-  await api.post('/api/repositorios', { name, description, type, memberEmails });
+      await api.post('/api/repositorios', { name, description, type, memberEmails });
       alert('✅ Repositorio creado correctamente.');
       onSuccess();
     } catch (err: any) {
-      console.error('Error creando repositorio', err);
+      console.error('Error creando repositorio desde modal', err);
       const message = err?.response?.data?.message || err?.message || 'Error al crear repositorio.';
       alert(`❌ ${message}`);
     }
