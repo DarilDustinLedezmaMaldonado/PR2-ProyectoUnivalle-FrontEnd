@@ -12,8 +12,16 @@ const SidebarNavigation: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) =>
   const navigate = useNavigate();
 
   const handleLogout = () => {
+    // Elimina el usuario en localStorage
     localStorage.removeItem('user');
-    window.location.href = '/'; // Cambia si tu login tiene otra ruta
+
+    // Si defines VITE_FRONTEND_URL en Vercel (por ejemplo https://tu-app.vercel.app),
+    // usaremos esa URL para redirigir al cerrar sesión. Si no está definida,
+    // redirigimos a la raíz relativa '/'.
+    const env = import.meta.env as Record<string, string | undefined>;
+    const frontendUrl = env.VITE_FRONTEND_URL;
+
+    window.location.href = frontendUrl ?? '/';
   };
 
   const handleNavigateProfile = () => {
@@ -22,12 +30,11 @@ const SidebarNavigation: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) =>
 
   const menuItems = [
     { id: 1, icon: <FiHome className="w-5 h-5" />, label: "Inicio", onClick: () => navigate("/home") },
-    { id: 2, icon: <FiFolder className="w-5 h-5" />, label: "Mis Repositorios", onClick: () => navigate("/file-repository") },
+    { id: 2, icon: <FiFolder className="w-5 h-5" />, label: "Mis Repositorios", onClick: () => navigate("/mis-repositorios") },
     { id: 3, icon: <FiBell className="w-5 h-5" />, label: "Notificaciones", onClick: () => navigate("/notificaciones") },
     { id: 4, icon: <FiUsers className="w-5 h-5" />, label: "Usuarios", onClick: () => navigate("/usuarios") },
     { id: 5, icon: <FiUser className="w-5 h-5" />, label: "Mi Perfil", onClick: handleNavigateProfile },
-    { id: 5, icon: <FiUser className="w-5 h-5" />, label: "Mi Perfil", onClick: handleNavigateProfile },
-    { id: 5, icon: <FiUser className="w-5 h-5" />, label: "Mi Perfil", onClick: handleNavigateProfile },
+    { id: 6, icon: <FiLogOut className="w-5 h-5" />, label: "Cerrar sesión", onClick: handleLogout },
   ];
 
   const user = JSON.parse(localStorage.getItem('user') || '{}');
@@ -87,20 +94,7 @@ const SidebarNavigation: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) =>
               ))}
             </ul>
           </nav>
-          {/* Botón de logout fijo abajo */}
-          <div className="px-4 pb-6">
-            <button
-              onClick={handleLogout}
-              className="flex items-center w-full px-4 py-3 text-left text-red-600 dark:text-red-400 rounded-lg hover:bg-red-100 dark:hover:bg-red-700 transition-colors duration-200 group"
-            >
-              <span className="group-hover:text-red-700 dark:group-hover:text-red-300">
-                <FiLogOut className="w-5 h-5" />
-              </span>
-              <span className="ml-3 font-medium group-hover:text-red-700 dark:group-hover:text-red-300">
-                Cerrar sesión
-              </span>
-            </button>
-          </div>
+          {/* (Se eliminó el botón fijo) */}
         </div>
       </aside>
     </>
