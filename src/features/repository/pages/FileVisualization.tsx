@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useLocation, useNavigate } from 'react-router-dom';
 import { FiX, FiUpload, FiFolder, FiChevronLeft, FiPlus } from "react-icons/fi";
 import { debounce } from "lodash";
@@ -6,7 +6,7 @@ import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import FileCard from "../components/FileCard";
 import { File } from "../types/file"; 
-import { fetchPersonalRepositoryId, fetchFilesByRepositoryId } from "../services/filesService";
+import { fetchPersonalRepositoryId, fetchFilesByRepositoryId, uploadFile } from "../services/filesService";
 import { listFolders, createFolder, getFolderAncestors } from "../services/foldersService";
 import ArchivoModal from "../components/FileModal";
 import api from '../../../utils/api';
@@ -22,6 +22,7 @@ import api from '../../../utils/api';
     const [newFolderName, setNewFolderName] = useState('');
     const [currentFolderName, setCurrentFolderName] = useState<string | null>(null);
     const [breadcrumbs, setBreadcrumbs] = useState<Array<{_id: string | null, name: string}>>([{_id: null, name: 'Raíz'}]);
+    const fileInputRef = useRef<HTMLInputElement | null>(null);
     const [searchTerm, setSearchTerm] = useState("");
     const [dateRange, setDateRange] = useState<[Date | null, Date | null]>([null, null]);
     const [fileType, setFileType] = useState("todos");
@@ -90,6 +91,41 @@ import api from '../../../utils/api';
       setCurrentFolderName(last?.name ?? null);
     } catch (err) {
       setBreadcrumbs([{ _id: null, name: 'Raíz' }]);
+    }
+  };
+
+  const triggerQuickUpload = () => {
+    if (!fileInputRef.current) return;
+    fileInputRef.current.value = '';
+    fileInputRef.current.click();
+  };
+
+  const handleQuickFileChange = async (e: any) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    const f = files[0];
+    if (!repositoryId) return alert('Repositorio no definido');
+    setLoading(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', f);
+      formData.append('title', f.name);
+      formData.append('author', '');
+      formData.append('description', '');
+      formData.append('importance', 'none');
+      formData.append('tags', '');
+      formData.append('privacy', 'private');
+      formData.append('repositoryId', repositoryId);
+      if (folderId) formData.append('folderId', folderId);
+
+      await uploadFile(formData);
+      alert('Archivo subido correctamente a la carpeta');
+      await handleUploaded();
+    } catch (err) {
+      console.error(err);
+      alert('Error subiendo archivo');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -295,6 +331,14 @@ import api from '../../../utils/api';
           />
         )}
 
+        {/* Hidden input used for quick upload into current folder */}
+        <input
+          ref={fileInputRef}
+          type="file"
+          className="hidden"
+          onChange={handleQuickFileChange}
+        />
+
         {/* Folders toolbar and list */}
         <div className="mb-6">
           <div className="mb-3">
@@ -341,6 +385,16 @@ import api from '../../../utils/api';
                   <FiPlus />
                   Nueva carpeta
                 </button>
+              )}
+
+              {/* Quick upload to current folder (visible when folderId is set) */}
+              {folderId && (
+                <>
+                  <button onClick={triggerQuickUpload} className="flex items-center gap-2 px-3 py-2 bg-[var(--color-primary)] text-white rounded-md hover:bg-[var(--color-primary-hover)] transition-colors">
+                    <FiUpload />
+                    Subir a esta carpeta
+                  </button>
+                </>
               )}
             </div>
           </div>
