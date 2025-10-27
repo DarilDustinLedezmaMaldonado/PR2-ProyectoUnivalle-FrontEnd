@@ -49,10 +49,24 @@ import api from '../../../utils/api';
     }, [searchTerm, allFiles]);
 
     const fetchAndSetFiles = async (repoId: string, parentFolderId: string | null = null) => {
-  setLoading(true);
-  const realFiles = await fetchFilesByRepositoryId(repoId, parentFolderId ?? undefined);
-  setAllFiles(realFiles);
-  setFiles(realFiles);
+    setLoading(true);
+    try {
+      const realFiles = await fetchFilesByRepositoryId(repoId, parentFolderId ?? undefined);
+      if (!Array.isArray(realFiles)) {
+        // ensure we always set arrays
+        setAllFiles([]);
+        setFiles([]);
+      } else {
+        setAllFiles(realFiles);
+        setFiles(realFiles);
+      }
+    } catch (err) {
+      console.error('Error fetching files for repo:', err);
+      setAllFiles([]);
+      setFiles([]);
+    } finally {
+      setLoading(false);
+    }
     // fetch repository name from user's repos
     try {
       const reposRes = await api.get('/api/repositorios/mis-repositorios');
@@ -192,6 +206,10 @@ import api from '../../../utils/api';
           fetchAndSetFiles(repositoryId, folderId ?? null),
           fetchAndSetFolders(repositoryId, folderId ?? null),
         ]);
+      } catch (err) {
+        console.error('Error refreshing after upload:', err);
+        // show simple error but avoid throwing (prevents white screen)
+        alert('Ocurrió un error al actualizar la lista después de subir. Intente refrescar la página.');
       } finally {
         setLoading(false);
       }
@@ -319,11 +337,16 @@ import api from '../../../utils/api';
                       // navigate to this breadcrumb
                       const targetId = b._id;
                       setFolderId(targetId ?? null);
-                      await Promise.all([
-                        fetchAndSetFiles(repositoryId!, targetId ?? null),
-                        fetchAndSetFolders(repositoryId!, targetId ?? null),
-                        fetchAndSetBreadcrumbs(targetId ?? null),
-                      ]);
+                        try {
+                          await Promise.all([
+                            fetchAndSetFiles(repositoryId!, targetId ?? null),
+                            fetchAndSetFolders(repositoryId!, targetId ?? null),
+                            fetchAndSetBreadcrumbs(targetId ?? null),
+                          ]);
+                        } catch (err) {
+                          console.error('Error navigating to breadcrumb:', err);
+                          alert('Error al navegar a la carpeta seleccionada. Intenta recargar.');
+                        }
                       navigate(`${location.pathname}?repoId=${repositoryId}${targetId ? `&folderId=${targetId}` : ''}`);
                     }}
                     className="text-[var(--color-primary)] hover:underline"
