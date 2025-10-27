@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useLocation } from 'react-router-dom';
 import { FiX, FiUpload} from "react-icons/fi";
 import { debounce } from "lodash";
 import DatePicker from "react-datepicker";
@@ -18,6 +19,7 @@ import ArchivoModal from "../components/FileModal";
     const [importanceLevel, setImportanceLevel] = useState(0);
     const [loading, setLoading] = useState(false);
     const [repositoryId, setRepositoryId] = useState<string | null>(null);
+    const location = useLocation();
   
     useEffect(() => {
       const handler = debounce((term: string) => {
@@ -45,9 +47,20 @@ import ArchivoModal from "../components/FileModal";
 };
 
     // Obtener el repositoryId
-useEffect(() => {
+  useEffect(() => {
   const fetchRepoAndFiles = async () => {
     try {
+      // Priorizar repoId pasado por query param: /file-repository?repoId=...
+      const params = new URLSearchParams(location.search);
+      const repoIdParam = params.get('repoId');
+
+      if (repoIdParam) {
+        setRepositoryId(repoIdParam);
+        await fetchAndSetFiles(repoIdParam);
+        return;
+      }
+
+      // Fallback: repository personal
       const id = await fetchPersonalRepositoryId();
       setRepositoryId(id);
       await fetchAndSetFiles(id);

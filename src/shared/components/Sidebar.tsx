@@ -76,7 +76,7 @@ const SidebarNavigation: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) =>
 
         {/* Navegación con scroll y botón de logout fijo abajo */}
         <div className="flex flex-col h-[calc(100vh-180px)]">
-          <nav className="flex-1 overflow-y-auto px-4 pt-6 pb-12 custom-scrollbar">
+          <nav className="flex-1 overflow-y-auto px-4 pt-6 pb-24 custom-scrollbar">
             <ul className="space-y-2">
               {menuItems.map((item) => (
                 <li key={item.id}>
