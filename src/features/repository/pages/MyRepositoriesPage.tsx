@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import api from "../../../utils/api";
 
 interface Repository {
@@ -42,51 +42,13 @@ const MyRepositoriesPage: React.FC = () => {
     }
   };
 
+  const location = useLocation();
+
   useEffect(() => {
     fetchRepositorios();
-  }, []);
+  }, [location.key]);
 
   
-
-  // Datos de ejemplo (tu diseño) — se muestran si no hay repositorios reales
-  const repositoryData = [
-    {
-      id: 1,
-      title: "🔬 Laboratorio de Química",
-      description:
-        "Documentos y resultados de experimentos del laboratorio de\nquímica orgánica. Proyecto colaborativo del semestre 2025-1.",
-      lastUpdate: "📊 Juan Carlos actualizó la documentación ayer",
-      files: "8 archivos",
-      members: "3 miembros",
-      privacy: "🔒 Privado",
-      gradientColor: "from-blue-500 to-purple-600",
-      collaboratorBadge: "👤 Colaborador",
-    },
-    {
-      id: 2,
-      title: "🔬 RX.UNO",
-      description:
-        "Documentos y resultados de experimentos del laboratorio de\nquímica orgánica. Proyecto colaborativo del semestre 2025-1.",
-      lastUpdate: "📊 Juan Carlos actualizó la documentación ayer",
-      files: "8 archivos",
-      members: "3 miembros",
-      privacy: "🔒 Privado",
-      gradientColor: "from-blue-600 to-pink-500",
-      collaboratorBadge: "👤 Colaborador",
-    },
-    {
-      id: 3,
-      title: "🔬 Laboratorio de Química",
-      description:
-        "Documentos y resultados de experimentos del laboratorio de\nquímica orgánica. Proyecto colaborativo del semestre 2025-1.",
-      lastUpdate: "📊 Juan Carlos actualizó la documentación ayer",
-      files: "8 archivos",
-      members: "3 miembros",
-      privacy: "🔒 Privado",
-      gradientColor: "from-pink-500 to-pink-400",
-      collaboratorBadge: "👤 Colaborador",
-    },
-  ];
 
   const renderRepository = (repo: any, idx?: number) => {
     const repoId = repo._id ?? repo.id;
@@ -115,16 +77,10 @@ const MyRepositoriesPage: React.FC = () => {
         <div className="flex justify-between items-start mb-4">
           <h3 className="text-xl font-bold text-gray-800 leading-6">{title}</h3>
           <div className="flex items-center gap-2">
-            <button className="p-3 bg-blue-100 rounded-lg hover:bg-blue-200 transition-colors">
-              <img src="/images/img_button.png" alt="Action" className="w-9 h-9" />
-            </button>
             <div className="flex flex-col items-end">
               <span className="text-xs font-bold text-blue-700 bg-gradient-to-r from-blue-50 to-blue-100 px-2 py-1 rounded-lg">
                 {repo.collaboratorBadge}
               </span>
-              <button className="p-2 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors mt-1">
-                <img src="/images/img_button_36x36.png" alt="More" className="w-9 h-9" />
-              </button>
             </div>
           </div>
         </div>
@@ -180,14 +136,14 @@ const MyRepositoriesPage: React.FC = () => {
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-2xl font-bold text-gray-800">Mis Repositorios</h2>
           <Link
-            to="/repositorios/crear"
+            to="/crear-repositorio"
             className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
           >
             + Nuevo Repositorio
           </Link>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {(repositorios.length > 0 ? repositorios : repositoryData).map((repo, idx) =>
+          {(repositorios.length > 0 ? repositorios : []).map((repo, idx) =>
             renderRepository(repo, idx)
           )}
         </div>
