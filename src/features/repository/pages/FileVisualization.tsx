@@ -1,12 +1,13 @@
 import { useState, useEffect } from "react";
-import { useLocation } from 'react-router-dom';
-import { FiX, FiUpload} from "react-icons/fi";
+import { useLocation, useNavigate } from 'react-router-dom';
+import { FiX, FiUpload, FiFolder, FiChevronLeft, FiPlus } from "react-icons/fi";
 import { debounce } from "lodash";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import FileCard from "../components/FileCard";
 import { File } from "../types/file"; 
 import { fetchPersonalRepositoryId, fetchFilesByRepositoryId } from "../services/filesService";
+import { listFolders, createFolder } from "../services/foldersService";
 import ArchivoModal from "../components/FileModal";
 import api from '../../../utils/api';
 
@@ -14,6 +15,12 @@ import api from '../../../utils/api';
     const [showModal, setShowModal] = useState(false);
     const [files, setFiles] = useState<File[]>([]);
     const [allFiles, setAllFiles] = useState<File[]>([]);
+    const [folders, setFolders] = useState<any[]>([]);
+    const [folderId, setFolderId] = useState<string | null>(null);
+    const [folderStack, setFolderStack] = useState<string[]>([]);
+    const [creatingFolder, setCreatingFolder] = useState(false);
+    const [newFolderName, setNewFolderName] = useState('');
+    const [currentFolderName, setCurrentFolderName] = useState<string | null>(null);
     const [searchTerm, setSearchTerm] = useState("");
     const [dateRange, setDateRange] = useState<[Date | null, Date | null]>([null, null]);
     const [fileType, setFileType] = useState("todos");
@@ -21,10 +28,11 @@ import api from '../../../utils/api';
     const [loading, setLoading] = useState(false);
     const [repositoryId, setRepositoryId] = useState<string | null>(null);
   const [repositoryName, setRepositoryName] = useState<string | null>(null);
-  const location = useLocation();
+    const location = useLocation();
+    const navigate = useNavigate();
   
     useEffect(() => {
-      const handler = debounce((term: string) => {
+    const handler = debounce((term: string) => {
         setLoading(true);
         const filtered = allFiles.filter(file =>
           file.filename.toLowerCase().includes(term.toLowerCase())
@@ -40,9 +48,9 @@ import api from '../../../utils/api';
       };
     }, [searchTerm, allFiles]);
 
-    const fetchAndSetFiles = async (repoId: string) => {
+    const fetchAndSetFiles = async (repoId: string, parentFolderId: string | null = null) => {
   setLoading(true);
-  const realFiles = await fetchFilesByRepositoryId(repoId);
+  const realFiles = await fetchFilesByRepositoryId(repoId, parentFolderId ?? undefined);
   setAllFiles(realFiles);
   setFiles(realFiles);
     // fetch repository name from user's repos
@@ -57,6 +65,15 @@ import api from '../../../utils/api';
   setLoading(false);
 };
 
+  const fetchAndSetFolders = async (repoId: string, parent: string | null = null) => {
+    try {
+      const res = await listFolders(repoId, parent);
+      setFolders(res || []);
+    } catch (err) {
+      setFolders([]);
+    }
+  };
+
     // Obtener el repositoryId
   useEffect(() => {
   const fetchRepoAndFiles = async () => {
@@ -64,17 +81,20 @@ import api from '../../../utils/api';
       // Priorizar repoId pasado por query param: /file-repository?repoId=...
       const params = new URLSearchParams(location.search);
       const repoIdParam = params.get('repoId');
+      const folderIdParam = params.get('folderId');
 
       if (repoIdParam) {
         setRepositoryId(repoIdParam);
-        await fetchAndSetFiles(repoIdParam);
+        setFolderId(folderIdParam);
+        setCurrentFolderName(null);
+        await Promise.all([fetchAndSetFiles(repoIdParam, folderIdParam), fetchAndSetFolders(repoIdParam, folderIdParam)]);
         return;
       }
 
       // Fallback: repository personal
       const id = await fetchPersonalRepositoryId();
       setRepositoryId(id);
-      await fetchAndSetFiles(id);
+      await Promise.all([fetchAndSetFiles(id, null), fetchAndSetFolders(id, null)]);
     } catch {
       setLoading(false);
     }
@@ -88,6 +108,52 @@ import api from '../../../utils/api';
       setFileType("todos");
       setImportanceLevel(0);
       setFiles([]);
+    };
+
+    const enterFolder = async (folder: any) => {
+      // push current folderId to stack
+      setFolderStack(prev => [...prev, folderId || '']);
+      const newFolderId = folder._id || folder.id;
+      setFolderId(newFolderId);
+      setCurrentFolderName(folder.name || 'Carpeta');
+      // update url
+      navigate(`${location.pathname}?repoId=${repositoryId}&folderId=${newFolderId}`);
+      await Promise.all([fetchAndSetFiles(repositoryId!, newFolderId), fetchAndSetFolders(repositoryId!, newFolderId)]);
+    };
+
+    const goBack = async () => {
+      setFolderStack(prev => {
+        if (prev.length === 0) {
+          // go to root
+          setFolderId(null);
+          navigate(`${location.pathname}?repoId=${repositoryId}`);
+          fetchAndSetFiles(repositoryId!, null);
+          fetchAndSetFolders(repositoryId!, null);
+          setCurrentFolderName(null);
+          return [];
+        }
+
+        const newStack = [...prev];
+        const last = newStack.pop()!;
+        const newFolderId = last || null;
+        setFolderId(newFolderId);
+        navigate(`${location.pathname}?repoId=${repositoryId}${newFolderId ? `&folderId=${newFolderId}` : ''}`);
+        fetchAndSetFiles(repositoryId!, newFolderId);
+        fetchAndSetFolders(repositoryId!, newFolderId);
+        return newStack;
+      });
+    };
+
+    const handleCreateFolder = async () => {
+      if (!newFolderName.trim() || !repositoryId) return;
+      try {
+        await createFolder(newFolderName.trim(), repositoryId, folderId ?? null);
+        setNewFolderName('');
+        setCreatingFolder(false);
+        await fetchAndSetFolders(repositoryId, folderId ?? null);
+      } catch (err) {
+        // ignore for now
+      }
     };
 
     const handleUploaded = async () => {
@@ -195,6 +261,58 @@ import api from '../../../utils/api';
             onUploaded={handleUploaded}
           />
         )}
+
+        {/* Folders toolbar and list */}
+        <div className="mb-6">
+          <div className="flex items-center gap-3 mb-4">
+            <button
+              onClick={goBack}
+              disabled={(folderStack.length === 0 && !folderId) as any}
+              className="p-2 rounded-md bg-white border border-[var(--color-primarytwo)] text-[var(--color-primary)] hover:bg-[var(--color-primary)] hover:text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              <FiChevronLeft />
+            </button>
+
+            <h2 className="text-lg font-semibold text-[var(--color-primary)]">
+              {currentFolderName ?? 'Raíz'}
+            </h2>
+
+            <div className="ml-auto flex items-center gap-2">
+              {creatingFolder ? (
+                <div className="flex items-center gap-2">
+                  <input
+                    value={newFolderName}
+                    onChange={(e) => setNewFolderName(e.target.value)}
+                    placeholder="Nombre carpeta"
+                    className="p-2 border rounded-md border-[var(--color-primarytwo)]"
+                  />
+                  <button onClick={handleCreateFolder} className="px-3 py-2 bg-[var(--color-primary)] text-white rounded-md">Crear</button>
+                  <button onClick={() => { setCreatingFolder(false); setNewFolderName(''); }} className="px-3 py-2 border rounded-md">Cancelar</button>
+                </div>
+              ) : (
+                <button onClick={() => setCreatingFolder(true)} className="flex items-center gap-2 px-3 py-2 bg-white border border-[var(--color-primary)] text-[var(--color-primary)] rounded-md hover:bg-[var(--color-primary)] hover:text-white transition-colors">
+                  <FiPlus />
+                  Nueva carpeta
+                </button>
+              )}
+            </div>
+          </div>
+
+          {folders && folders.length > 0 ? (
+            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 mb-4">
+              {folders.map((f) => (
+                <div key={f._id || f.id} onClick={() => enterFolder(f)} className="p-3 bg-white border rounded-md hover:shadow-md cursor-pointer flex flex-col items-start gap-2">
+                  <div className="text-[var(--color-primary)] bg-[var(--color-primary-light)] p-2 rounded-md">
+                    <FiFolder className="w-6 h-6" />
+                  </div>
+                  <div className="text-sm font-medium text-[var(--color-primarytwo)] truncate">{f.name}</div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm text-gray-500">No hay carpetas en este nivel</p>
+          )}
+        </div>
   
         {loading ? (
           <div className="flex justify-center items-center h-64">

@@ -17,7 +17,8 @@ export const uploadFile = async (formData: FormData): Promise<void> => {
   });
 };
 
-export const fetchFilesByRepositoryId = async (repositoryId: string): Promise<File[]> => {
-  const response = await api.get(`/api/files/myfiles/${repositoryId}`);
+export const fetchFilesByRepositoryId = async (repositoryId: string, folderId?: string | null): Promise<File[]> => {
+  const url = folderId ? `/api/files/myfiles/${repositoryId}?folderId=${folderId}` : `/api/files/myfiles/${repositoryId}`;
+  const response = await api.get(url);
   return response.data;
 };
