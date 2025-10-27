@@ -34,8 +34,8 @@ const VerifyCode: React.FC = () => {
       // Actualiza el contexto global con el usuario
       
 
-      // Navega a la página principal
-      navigate("/file-repository");
+  // Navega a la lista de repositorios
+  navigate("/mis-repositorios");
     } catch (err: unknown) {
       if (err instanceof Error) {
         setError(err.message || "Error al verificar el código.");

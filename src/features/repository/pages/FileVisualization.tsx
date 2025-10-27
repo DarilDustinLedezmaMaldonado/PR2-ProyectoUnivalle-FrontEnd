@@ -8,6 +8,7 @@ import FileCard from "../components/FileCard";
 import { File } from "../types/file"; 
 import { fetchPersonalRepositoryId, fetchFilesByRepositoryId } from "../services/filesService";
 import ArchivoModal from "../components/FileModal";
+import api from '../../../utils/api';
 
   const FileVisualization = () => {
     const [showModal, setShowModal] = useState(false);
@@ -19,7 +20,8 @@ import ArchivoModal from "../components/FileModal";
     const [importanceLevel, setImportanceLevel] = useState(0);
     const [loading, setLoading] = useState(false);
     const [repositoryId, setRepositoryId] = useState<string | null>(null);
-    const location = useLocation();
+  const [repositoryName, setRepositoryName] = useState<string | null>(null);
+  const location = useLocation();
   
     useEffect(() => {
       const handler = debounce((term: string) => {
@@ -43,6 +45,15 @@ import ArchivoModal from "../components/FileModal";
   const realFiles = await fetchFilesByRepositoryId(repoId);
   setAllFiles(realFiles);
   setFiles(realFiles);
+    // fetch repository name from user's repos
+    try {
+      const reposRes = await api.get('/api/repositorios/mis-repositorios');
+      const repos = reposRes.data || [];
+      const found = repos.find((r: any) => (r._id || r.id) === repoId);
+      if (found) setRepositoryName(found.name || found.title || 'Repositorio');
+    } catch (e) {
+      // ignore name fetch errors
+    }
   setLoading(false);
 };
 
@@ -85,7 +96,25 @@ import ArchivoModal from "../components/FileModal";
   
     return (
       <div className="container mx-auto px-4 py-8">
-        <h1 className="text-[var(--color-primary)] text-3xl font-bold text-center mb-8">Mis Archivos</h1>
+        <div className="flex items-center justify-center mb-8">
+          <h1 className="text-[var(--color-primary)] text-3xl font-bold text-center">
+            {repositoryName ?? 'Mis Archivos'}
+          </h1>
+          {repositoryId && (
+            <button
+              onClick={() => {
+                const email = prompt('Ingrese el email del participante a añadir:');
+                if (email) {
+                  // TODO: llamar al endpoint para añadir participante cuando exista
+                  alert(`Solicitud para añadir participante: ${email}`);
+                }
+              }}
+              className="ml-4 bg-blue-600 text-white px-3 py-2 rounded-md text-sm hover:bg-blue-700"
+            >
+              Añadir participantes
+            </button>
+          )}
+        </div>
   
         <div className="mb-8">
           <div className="relative">
