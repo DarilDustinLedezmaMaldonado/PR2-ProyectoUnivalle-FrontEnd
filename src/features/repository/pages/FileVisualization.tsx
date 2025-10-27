@@ -7,7 +7,7 @@ import "react-datepicker/dist/react-datepicker.css";
 import FileCard from "../components/FileCard";
 import { File } from "../types/file"; 
 import { fetchPersonalRepositoryId, fetchFilesByRepositoryId } from "../services/filesService";
-import { listFolders, createFolder } from "../services/foldersService";
+import { listFolders, createFolder, getFolderAncestors } from "../services/foldersService";
 import ArchivoModal from "../components/FileModal";
 import api from '../../../utils/api';
 
@@ -21,6 +21,7 @@ import api from '../../../utils/api';
     const [creatingFolder, setCreatingFolder] = useState(false);
     const [newFolderName, setNewFolderName] = useState('');
     const [currentFolderName, setCurrentFolderName] = useState<string | null>(null);
+    const [breadcrumbs, setBreadcrumbs] = useState<Array<{_id: string | null, name: string}>>([{_id: null, name: 'Raíz'}]);
     const [searchTerm, setSearchTerm] = useState("");
     const [dateRange, setDateRange] = useState<[Date | null, Date | null]>([null, null]);
     const [fileType, setFileType] = useState("todos");
@@ -74,6 +75,24 @@ import api from '../../../utils/api';
     }
   };
 
+  const fetchAndSetBreadcrumbs = async (repoId: string, folderIdParam: string | null) => {
+    try {
+      if (!folderIdParam) {
+        setBreadcrumbs([{ _id: null, name: 'Raíz' }]);
+        return;
+      }
+      const res = await getFolderAncestors(folderIdParam);
+      // res is array root->current
+      const mapped = res.map((f: any) => ({ _id: f._id, name: f.name }));
+      setBreadcrumbs([{ _id: null, name: 'Raíz' }, ...mapped]);
+      // set current folder name
+      const last = mapped[mapped.length - 1];
+      setCurrentFolderName(last?.name ?? null);
+    } catch (err) {
+      setBreadcrumbs([{ _id: null, name: 'Raíz' }]);
+    }
+  };
+
     // Obtener el repositoryId
   useEffect(() => {
   const fetchRepoAndFiles = async () => {
@@ -87,14 +106,18 @@ import api from '../../../utils/api';
         setRepositoryId(repoIdParam);
         setFolderId(folderIdParam);
         setCurrentFolderName(null);
-        await Promise.all([fetchAndSetFiles(repoIdParam, folderIdParam), fetchAndSetFolders(repoIdParam, folderIdParam)]);
+        await Promise.all([
+          fetchAndSetFiles(repoIdParam, folderIdParam),
+          fetchAndSetFolders(repoIdParam, folderIdParam),
+          fetchAndSetBreadcrumbs(repoIdParam, folderIdParam),
+        ]);
         return;
       }
 
       // Fallback: repository personal
       const id = await fetchPersonalRepositoryId();
       setRepositoryId(id);
-      await Promise.all([fetchAndSetFiles(id, null), fetchAndSetFolders(id, null)]);
+      await Promise.all([fetchAndSetFiles(id, null), fetchAndSetFolders(id, null), fetchAndSetBreadcrumbs(id, null)]);
     } catch {
       setLoading(false);
     }
@@ -157,7 +180,16 @@ import api from '../../../utils/api';
     };
 
     const handleUploaded = async () => {
-      console.log("Aca se tendria que refrescar la lista de archivos");
+      if (!repositoryId) return;
+      setLoading(true);
+      try {
+        await Promise.all([
+          fetchAndSetFiles(repositoryId, folderId ?? null),
+          fetchAndSetFolders(repositoryId, folderId ?? null),
+        ]);
+      } finally {
+        setLoading(false);
+      }
     };
   
     return (
@@ -259,24 +291,39 @@ import api from '../../../utils/api';
             onClose={() => setShowModal(false)}
             repositoryId={repositoryId}
             onUploaded={handleUploaded}
+            initialFolderId={folderId ?? null}
           />
         )}
 
         {/* Folders toolbar and list */}
         <div className="mb-6">
+          <div className="mb-3">
+            <nav className="flex items-center gap-2 text-sm text-[var(--color-primarytwo)]">
+              {breadcrumbs.map((b, idx) => (
+                <span key={String(b._id) + idx} className="flex items-center gap-2">
+                  <button
+                    onClick={async () => {
+                      // navigate to this breadcrumb
+                      const targetId = b._id;
+                      setFolderId(targetId ?? null);
+                      await Promise.all([
+                        fetchAndSetFiles(repositoryId!, targetId ?? null),
+                        fetchAndSetFolders(repositoryId!, targetId ?? null),
+                        fetchAndSetBreadcrumbs(repositoryId!, targetId ?? null),
+                      ]);
+                      navigate(`${location.pathname}?repoId=${repositoryId}${targetId ? `&folderId=${targetId}` : ''}`);
+                    }}
+                    className="text-[var(--color-primary)] hover:underline"
+                  >
+                    {b.name}
+                  </button>
+                  {idx < breadcrumbs.length - 1 && <span className="text-gray-400">/</span>}
+                </span>
+              ))}
+            </nav>
+          </div>
+
           <div className="flex items-center gap-3 mb-4">
-            <button
-              onClick={goBack}
-              disabled={(folderStack.length === 0 && !folderId) as any}
-              className="p-2 rounded-md bg-white border border-[var(--color-primarytwo)] text-[var(--color-primary)] hover:bg-[var(--color-primary)] hover:text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            >
-              <FiChevronLeft />
-            </button>
-
-            <h2 className="text-lg font-semibold text-[var(--color-primary)]">
-              {currentFolderName ?? 'Raíz'}
-            </h2>
-
             <div className="ml-auto flex items-center gap-2">
               {creatingFolder ? (
                 <div className="flex items-center gap-2">

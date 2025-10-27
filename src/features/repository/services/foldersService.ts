@@ -16,3 +16,8 @@ export const createFolder = async (name: string, repositoryId: string, parent: s
   const res = await http.post('/api/folders', body);
   return res.data;
 };
+
+export const getFolderAncestors = async (folderId: string) => {
+  const res = await http.get(`/api/folders/${folderId}`);
+  return res.data;
+};

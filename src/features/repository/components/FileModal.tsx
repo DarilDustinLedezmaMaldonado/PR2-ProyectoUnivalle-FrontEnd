@@ -10,9 +10,10 @@ interface ArchivoModalProps {
   onClose: () => void;
   repositoryId: string;
   onUploaded: () => void;
+  initialFolderId?: string | null;
 }
 
-const ArchivoModal: React.FC<ArchivoModalProps> = ({ onClose, repositoryId, onUploaded }) => {
+const ArchivoModal: React.FC<ArchivoModalProps> = ({ onClose, repositoryId, onUploaded, initialFolderId }) => {
   const [fileName, setFileName] = useState("");
   const [description, setDescription] = useState("");
   const [importance, setImportance] = useState("none");
@@ -105,8 +106,8 @@ const ArchivoModal: React.FC<ArchivoModalProps> = ({ onClose, repositoryId, onUp
   React.useEffect(() => {
     fetchFolders();
     // reset selection when repository changes
-    setSelectedFolderId(null);
-  }, [repositoryId]);
+    setSelectedFolderId(initialFolderId ?? null);
+  }, [repositoryId, initialFolderId]);
 
   const handleAddTag = () => {
     if (tagInput.trim() !== "" && !tags.includes(tagInput.trim())) {
@@ -260,11 +261,18 @@ const ArchivoModal: React.FC<ArchivoModalProps> = ({ onClose, repositoryId, onUp
                         value={selectedFolderId ?? ''}
                         onChange={(e) => setSelectedFolderId(e.target.value || null)}
                         className="p-2 rounded-md border border-[var(--color-primarytwo)] text-[var(--color-primarytwo)]"
+                        disabled={loadingFolders}
                       >
-                        <option value="">Raíz (sin carpeta)</option>
-                        {folders.map(f => (
-                          <option key={f._id || f.id} value={f._id || f.id}>{f.name}</option>
-                        ))}
+                        {loadingFolders ? (
+                          <option>...Cargando carpetas</option>
+                        ) : (
+                          <>
+                            <option value="">Raíz (sin carpeta)</option>
+                            {folders.map(f => (
+                              <option key={f._id || f.id} value={f._id || f.id}>{f.name}</option>
+                            ))}
+                          </>
+                        )}
                       </select>
 
                       {!showNewFolder ? (
