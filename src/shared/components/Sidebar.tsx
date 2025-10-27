@@ -35,6 +35,8 @@ const SidebarNavigation: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) =>
     { id: 4, icon: <FiUsers className="w-5 h-5" />, label: "Usuarios", onClick: () => navigate("/usuarios") },
     { id: 5, icon: <FiUser className="w-5 h-5" />, label: "Mi Perfil", onClick: handleNavigateProfile },
     { id: 6, icon: <FiLogOut className="w-5 h-5" />, label: "Cerrar sesión", onClick: handleLogout },
+    { id: 6, icon: <FiLogOut className="w-5 h-5" />, label: "Cerrar sesión", onClick: handleLogout },
+    
   ];
 
   const user = JSON.parse(localStorage.getItem('user') || '{}');
