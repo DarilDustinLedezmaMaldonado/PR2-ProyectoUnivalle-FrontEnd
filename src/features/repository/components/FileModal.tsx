@@ -16,7 +16,7 @@ interface ArchivoModalProps {
 const ArchivoModal: React.FC<ArchivoModalProps> = ({ onClose, repositoryId, onUploaded, initialFolderId }) => {
   const [fileName, setFileName] = useState("");
   const [description, setDescription] = useState("");
-  const [importance, setImportance] = useState("none");
+  const [importance, setImportance] = useState("0");
   const [tags, setTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState("");
   const [privacy, setPrivacy] = useState("private");

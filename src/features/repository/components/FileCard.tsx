@@ -22,9 +22,13 @@ const FileCard: React.FC<FileCardProps> = ({ file }) => {
           <h3 className="font-medium text-gray-900 truncate">{file.filename}</h3>
         </div>
         <div className="flex items-center gap-0.5">
-          {[...Array(Number(file.metadata.importance))].map((_, i) => (
-            <FiStar key={i} className="w-4 h-4 text-amber-400 fill-current" />
-          ))}
+          {(() => {
+            const raw = Number(file.metadata?.importance);
+            const n = Number.isFinite(raw) ? Math.max(0, Math.min(5, raw)) : 0;
+            return Array.from({ length: n }).map((_, i) => (
+              <FiStar key={i} className="w-4 h-4 text-amber-400 fill-current" />
+            ));
+          })()}
         </div>
       </div>
 
