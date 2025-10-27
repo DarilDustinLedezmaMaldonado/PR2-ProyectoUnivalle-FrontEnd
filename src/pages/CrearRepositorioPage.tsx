@@ -44,6 +44,10 @@ const CrearRepositorioPage: React.FC = () => {
 
   const handleSubmit = async () => {
     try {
+      if (!formData.name || formData.name.trim().length === 0) {
+        alert('El nombre del repositorio es obligatorio');
+        return;
+      }
       const dataToSend = {
         name: formData.name,
         description: formData.description,
@@ -106,8 +110,8 @@ const CrearRepositorioPage: React.FC = () => {
                 onChange={(e) => handleChange("type", e.target.value)}
                 className="w-full border rounded-md px-3 py-2 focus:ring-2 focus:ring-pink-500"
               >
-                <option value="Simple">Simple</option>
-                <option value="Creador">Creador</option>
+                <option value="simple">Simple</option>
+                <option value="creator">Creador</option>
               </select>
             </div>
             <div>
