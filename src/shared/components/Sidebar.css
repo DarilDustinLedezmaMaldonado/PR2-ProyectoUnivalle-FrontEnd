@@ -3,11 +3,13 @@
   /* Firefox */
   scrollbar-width: thin;
   scrollbar-color: rgba(148,163,184,0.8) rgba(248,250,252,0.9);
+  /* Reserve space for scrollbar to avoid content being covered in Chromium-based browsers */
+  scrollbar-gutter: stable;
 }
 
 /* Chrome, Edge, Safari */
 .custom-scrollbar::-webkit-scrollbar {
-  width: 8px;
+  width: 10px;
   border-radius: 8px;
   background: transparent; /* allow background behind scrollbar */
 }
