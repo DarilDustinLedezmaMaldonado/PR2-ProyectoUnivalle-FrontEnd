@@ -1,6 +1,7 @@
 import React, { useState,useCallback } from "react";
 import { useUser } from "../../../context/useUser";
 import { uploadFile } from "../services/filesService";
+import { listFolders, createFolder } from "../services/foldersService";
 import { useDropzone } from "react-dropzone";
 import { AiOutlineCloudUpload } from "react-icons/ai";
 import { FiX, FiUpload, FiStar } from "react-icons/fi";
@@ -21,6 +22,11 @@ const ArchivoModal: React.FC<ArchivoModalProps> = ({ onClose, repositoryId, onUp
   const [file, setFile] = useState<File | null>(null);
   const [hoverRating, setHoverRating] = useState(0);
   const [isUploading, setIsUploading] = useState(false);
+  const [folders, setFolders] = useState<any[]>([]);
+  const [loadingFolders, setLoadingFolders] = useState(false);
+  const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null);
+  const [showNewFolder, setShowNewFolder] = useState(false);
+  const [newFolderNameModal, setNewFolderNameModal] = useState('');
   const { user } = useUser();
 
    const onDrop = useCallback((acceptedFiles: File[]) => {
@@ -49,6 +55,9 @@ const ArchivoModal: React.FC<ArchivoModalProps> = ({ onClose, repositoryId, onUp
     formData.append("privacy", privacy);
     formData.append("file", file);
     formData.append("repositoryId", repositoryId);
+    if (selectedFolderId) {
+      formData.append('folderId', selectedFolderId);
+    }
 
     try {
       await uploadFile(formData);
@@ -63,6 +72,41 @@ const ArchivoModal: React.FC<ArchivoModalProps> = ({ onClose, repositoryId, onUp
       setIsUploading(false);
     }
   };
+
+  const fetchFolders = async () => {
+    if (!repositoryId) return;
+    setLoadingFolders(true);
+    try {
+      const res = await listFolders(repositoryId, null);
+      setFolders(res || []);
+    } catch (err) {
+      setFolders([]);
+    } finally {
+      setLoadingFolders(false);
+    }
+  };
+
+  const handleCreateFolder = async () => {
+    if (!newFolderNameModal.trim()) return;
+    try {
+      const created = await createFolder(newFolderNameModal.trim(), repositoryId, null);
+      // refresh folders and select new one
+      await fetchFolders();
+      const newId = created?.folder?._id || created?.folder?.id;
+      if (newId) setSelectedFolderId(newId);
+      setNewFolderNameModal('');
+      setShowNewFolder(false);
+    } catch (err) {
+      // ignore for now
+    }
+  };
+
+  // fetch folders on mount / repository change
+  React.useEffect(() => {
+    fetchFolders();
+    // reset selection when repository changes
+    setSelectedFolderId(null);
+  }, [repositoryId]);
 
   const handleAddTag = () => {
     if (tagInput.trim() !== "" && !tags.includes(tagInput.trim())) {
@@ -206,6 +250,32 @@ const ArchivoModal: React.FC<ArchivoModalProps> = ({ onClose, repositoryId, onUp
                             className={`w-full py-2 rounded-lg font-semibold border ${privacy === "private" ? "bg-[var(--color-primarytwo)] text-white" : "border-[var(--color-primarytwo)] text-[var(--color-primary)]"}`}>
                             Privado
                         </button>
+                    </div>
+                </div>
+
+                <div className="mb-6">
+                    <label className="block mb-1 text-sm font-medium text-gray-700">Carpeta destino</label>
+                    <div className="flex gap-2 items-center">
+                      <select
+                        value={selectedFolderId ?? ''}
+                        onChange={(e) => setSelectedFolderId(e.target.value || null)}
+                        className="p-2 rounded-md border border-[var(--color-primarytwo)] text-[var(--color-primarytwo)]"
+                      >
+                        <option value="">Raíz (sin carpeta)</option>
+                        {folders.map(f => (
+                          <option key={f._id || f.id} value={f._id || f.id}>{f.name}</option>
+                        ))}
+                      </select>
+
+                      {!showNewFolder ? (
+                        <button onClick={() => setShowNewFolder(true)} className="px-3 py-2 bg-white border border-[var(--color-primary)] text-[var(--color-primary)] rounded-md hover:bg-[var(--color-primary)] hover:text-white transition-colors">Nueva carpeta</button>
+                      ) : (
+                        <div className="flex items-center gap-2">
+                          <input value={newFolderNameModal} onChange={(e) => setNewFolderNameModal(e.target.value)} placeholder="Nombre carpeta" className="p-2 border rounded-md" />
+                          <button onClick={handleCreateFolder} className="px-3 py-2 bg-[var(--color-primary)] text-white rounded-md">Crear</button>
+                          <button onClick={() => { setShowNewFolder(false); setNewFolderNameModal(''); }} className="px-3 py-2 border rounded-md">Cancelar</button>
+                        </div>
+                      )}
                     </div>
                 </div>
 
