@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useLocation, useNavigate } from 'react-router-dom';
-import { FiX, FiUpload, FiFolder, FiChevronLeft, FiPlus } from "react-icons/fi";
+import { FiX, FiUpload, FiFolder, FiPlus } from "react-icons/fi";
 import { debounce } from "lodash";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
@@ -17,10 +17,8 @@ import api from '../../../utils/api';
     const [allFiles, setAllFiles] = useState<File[]>([]);
     const [folders, setFolders] = useState<any[]>([]);
     const [folderId, setFolderId] = useState<string | null>(null);
-    const [folderStack, setFolderStack] = useState<string[]>([]);
-    const [creatingFolder, setCreatingFolder] = useState(false);
-    const [newFolderName, setNewFolderName] = useState('');
-    const [currentFolderName, setCurrentFolderName] = useState<string | null>(null);
+  const [creatingFolder, setCreatingFolder] = useState(false);
+  const [newFolderName, setNewFolderName] = useState('');
     const [breadcrumbs, setBreadcrumbs] = useState<Array<{_id: string | null, name: string}>>([{_id: null, name: 'Raíz'}]);
     const fileInputRef = useRef<HTMLInputElement | null>(null);
     const [searchTerm, setSearchTerm] = useState("");
@@ -76,7 +74,7 @@ import api from '../../../utils/api';
     }
   };
 
-  const fetchAndSetBreadcrumbs = async (repoId: string, folderIdParam: string | null) => {
+  const fetchAndSetBreadcrumbs = async (folderIdParam: string | null) => {
     try {
       if (!folderIdParam) {
         setBreadcrumbs([{ _id: null, name: 'Raíz' }]);
@@ -86,9 +84,7 @@ import api from '../../../utils/api';
       // res is array root->current
       const mapped = res.map((f: any) => ({ _id: f._id, name: f.name }));
       setBreadcrumbs([{ _id: null, name: 'Raíz' }, ...mapped]);
-      // set current folder name
-      const last = mapped[mapped.length - 1];
-      setCurrentFolderName(last?.name ?? null);
+      // set current folder name (not stored separately)
     } catch (err) {
       setBreadcrumbs([{ _id: null, name: 'Raíz' }]);
     }
@@ -141,19 +137,18 @@ import api from '../../../utils/api';
       if (repoIdParam) {
         setRepositoryId(repoIdParam);
         setFolderId(folderIdParam);
-        setCurrentFolderName(null);
         await Promise.all([
           fetchAndSetFiles(repoIdParam, folderIdParam),
           fetchAndSetFolders(repoIdParam, folderIdParam),
-          fetchAndSetBreadcrumbs(repoIdParam, folderIdParam),
+          fetchAndSetBreadcrumbs(folderIdParam),
         ]);
         return;
       }
 
       // Fallback: repository personal
       const id = await fetchPersonalRepositoryId();
-      setRepositoryId(id);
-      await Promise.all([fetchAndSetFiles(id, null), fetchAndSetFolders(id, null), fetchAndSetBreadcrumbs(id, null)]);
+  setRepositoryId(id);
+  await Promise.all([fetchAndSetFiles(id, null), fetchAndSetFolders(id, null), fetchAndSetBreadcrumbs(null)]);
     } catch {
       setLoading(false);
     }
@@ -170,37 +165,11 @@ import api from '../../../utils/api';
     };
 
     const enterFolder = async (folder: any) => {
-      // push current folderId to stack
-      setFolderStack(prev => [...prev, folderId || '']);
       const newFolderId = folder._id || folder.id;
       setFolderId(newFolderId);
-      setCurrentFolderName(folder.name || 'Carpeta');
       // update url
       navigate(`${location.pathname}?repoId=${repositoryId}&folderId=${newFolderId}`);
       await Promise.all([fetchAndSetFiles(repositoryId!, newFolderId), fetchAndSetFolders(repositoryId!, newFolderId)]);
-    };
-
-    const goBack = async () => {
-      setFolderStack(prev => {
-        if (prev.length === 0) {
-          // go to root
-          setFolderId(null);
-          navigate(`${location.pathname}?repoId=${repositoryId}`);
-          fetchAndSetFiles(repositoryId!, null);
-          fetchAndSetFolders(repositoryId!, null);
-          setCurrentFolderName(null);
-          return [];
-        }
-
-        const newStack = [...prev];
-        const last = newStack.pop()!;
-        const newFolderId = last || null;
-        setFolderId(newFolderId);
-        navigate(`${location.pathname}?repoId=${repositoryId}${newFolderId ? `&folderId=${newFolderId}` : ''}`);
-        fetchAndSetFiles(repositoryId!, newFolderId);
-        fetchAndSetFolders(repositoryId!, newFolderId);
-        return newStack;
-      });
     };
 
     const handleCreateFolder = async () => {
@@ -346,14 +315,14 @@ import api from '../../../utils/api';
               {breadcrumbs.map((b, idx) => (
                 <span key={String(b._id) + idx} className="flex items-center gap-2">
                   <button
-                    onClick={async () => {
+                      onClick={async () => {
                       // navigate to this breadcrumb
                       const targetId = b._id;
                       setFolderId(targetId ?? null);
                       await Promise.all([
                         fetchAndSetFiles(repositoryId!, targetId ?? null),
                         fetchAndSetFolders(repositoryId!, targetId ?? null),
-                        fetchAndSetBreadcrumbs(repositoryId!, targetId ?? null),
+                        fetchAndSetBreadcrumbs(targetId ?? null),
                       ]);
                       navigate(`${location.pathname}?repoId=${repositoryId}${targetId ? `&folderId=${targetId}` : ''}`);
                     }}
