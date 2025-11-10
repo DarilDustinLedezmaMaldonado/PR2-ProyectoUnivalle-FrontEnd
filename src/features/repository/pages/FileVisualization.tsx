@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useLocation, useNavigate } from 'react-router-dom';
-import { FiX, FiUpload, FiFolder, FiPlus } from "react-icons/fi";
+import { FiX, FiUpload, FiFolder, FiPlus, FiUserPlus, FiUsers } from "react-icons/fi";
 import { debounce } from "lodash";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
@@ -9,6 +9,8 @@ import { File } from "../types/file";
 import { fetchPersonalRepositoryId, fetchFilesByRepositoryId, uploadFile } from "../services/filesService";
 import { listFolders, createFolder, getFolderAncestors } from "../services/foldersService";
 import ArchivoModal from "../components/FileModal";
+import InviteUserModal from "../components/InviteUserModal";
+import ManageMembersModal from "../components/ManageMembersModal";
 import api from '../../../utils/api';
 
   const FileVisualization = () => {
@@ -28,6 +30,9 @@ import api from '../../../utils/api';
     const [loading, setLoading] = useState(false);
     const [repositoryId, setRepositoryId] = useState<string | null>(null);
   const [repositoryName, setRepositoryName] = useState<string | null>(null);
+    const [showInviteModal, setShowInviteModal] = useState(false);
+    const [showMembersModal, setShowMembersModal] = useState(false);
+    const [isOwner, setIsOwner] = useState(false);
     const location = useLocation();
     const navigate = useNavigate();
   
@@ -72,7 +77,17 @@ import api from '../../../utils/api';
       const reposRes = await api.get('/api/repositorios/mis-repositorios');
       const repos = reposRes.data || [];
       const found = repos.find((r: any) => (r._id || r.id) === repoId);
-      if (found) setRepositoryName(found.name || found.title || 'Repositorio');
+      if (found) {
+        setRepositoryName(found.name || found.title || 'Repositorio');
+        // Check if current user is the owner
+        const userStr = localStorage.getItem('user');
+        if (userStr) {
+          const userData = JSON.parse(userStr);
+          const userId = userData._id || userData.id;
+          const ownerId = found.owner?._id || found.owner?.id || found.owner;
+          setIsOwner(userId === ownerId);
+        }
+      }
     } catch (e) {
       // ignore name fetch errors
     }
@@ -217,23 +232,27 @@ import api from '../../../utils/api';
   
     return (
       <div className="container mx-auto px-4 py-8">
-        <div className="flex items-center justify-center mb-8">
-          <h1 className="text-[var(--color-primary)] text-3xl font-bold text-center">
+        <div className="flex items-center justify-between mb-8">
+          <h1 className="text-[var(--color-primary)] text-3xl font-bold">
             {repositoryName ?? 'Mis Archivos'}
           </h1>
           {repositoryId && (
-            <button
-              onClick={() => {
-                const email = prompt('Ingrese el email del participante a añadir:');
-                if (email) {
-                  // TODO: llamar al endpoint para añadir participante cuando exista
-                  alert(`Solicitud para añadir participante: ${email}`);
-                }
-              }}
-              className="ml-4 bg-blue-600 text-white px-3 py-2 rounded-md text-sm hover:bg-blue-700"
-            >
-              Añadir participantes
-            </button>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowInviteModal(true)}
+                className="bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-blue-700 transition-colors flex items-center gap-2"
+              >
+                <FiUserPlus className="text-lg" />
+                Invitar usuarios
+              </button>
+              <button
+                onClick={() => setShowMembersModal(true)}
+                className="bg-gray-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-gray-700 transition-colors flex items-center gap-2"
+              >
+                <FiUsers className="text-lg" />
+                Ver miembros
+              </button>
+            </div>
           )}
         </div>
   
@@ -421,6 +440,26 @@ import api from '../../../utils/api';
           <div className="text-center py-12">
             <p className="text-xl text-gray-500">No se encontraron archivos</p>
           </div>
+        )}
+
+        {/* Modals de invitación y gestión de miembros */}
+        {repositoryId && (
+          <>
+            <InviteUserModal
+              isOpen={showInviteModal}
+              onClose={() => setShowInviteModal(false)}
+              repositoryId={repositoryId}
+              repositoryName={repositoryName || 'Repositorio'}
+            />
+            
+            <ManageMembersModal
+              isOpen={showMembersModal}
+              onClose={() => setShowMembersModal(false)}
+              repositoryId={repositoryId}
+              repositoryName={repositoryName || 'Repositorio'}
+              isOwner={isOwner}
+            />
+          </>
         )}
       </div>
     );
