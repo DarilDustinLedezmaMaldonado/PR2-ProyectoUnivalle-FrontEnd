@@ -1,7 +1,8 @@
 // src/pages/EditarPerfilPage.tsx
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../utils/api";
+import { FiCamera } from "react-icons/fi";
 
 // Listas iniciales
 const universidades = [
@@ -42,6 +43,9 @@ export default function EditarPerfilPage() {
   const [notifInvitaciones, setNotifInvitaciones] = useState(false);
   const [loading, setLoading] = useState(true);
   const [userId, setUserId] = useState("");
+  const [profileImage, setProfileImage] = useState("");
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Cargar datos del usuario al montar
   useEffect(() => {
@@ -70,6 +74,8 @@ export default function EditarPerfilPage() {
         setPrograma(userData.profesion || "");
         setSemestre(userData.ciudad || "");
         setHobbies(userData.hobbies || []);
+        setProfileImage(userData.profileImage || "");
+        setTemaSeleccionado(userData.theme || "azul-morado");
         
         setLoading(false);
       } catch (error) {
@@ -93,6 +99,43 @@ export default function EditarPerfilPage() {
     setHobbies(hobbies.filter((h) => h !== hobby));
   };
 
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validar tipo y tamaño
+    if (!file.type.startsWith('image/')) {
+      alert('❌ Por favor selecciona una imagen válida');
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      alert('❌ La imagen no debe superar 5MB');
+      return;
+    }
+
+    setUploadingImage(true);
+
+    try {
+      const formData = new FormData();
+      formData.append('image', file);
+
+      const response = await api.post('/api/upload/profile-image', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+
+      setProfileImage(response.data.url);
+      alert('✅ Imagen subida exitosamente');
+    } catch (error) {
+      console.error('Error al subir imagen:', error);
+      alert('❌ Error al subir la imagen. Intenta nuevamente.');
+    } finally {
+      setUploadingImage(false);
+    }
+  };
+
   const guardarCambios = async () => {
     if (!userId) {
       alert('No se pudo identificar el usuario');
@@ -109,7 +152,8 @@ export default function EditarPerfilPage() {
         ciudad: semestre,
         contacto: username,
         hobbies,
-        profileImage: `https://ui-avatars.com/api/?name=${nombre}+${apellidos}&background=be185d&color=fff&size=150`,
+        profileImage: profileImage || `https://ui-avatars.com/api/?name=${nombre}+${apellidos}&background=be185d&color=fff&size=150`,
+        theme: temaSeleccionado,
       });
 
       alert('✅ Perfil actualizado exitosamente');
@@ -136,8 +180,37 @@ export default function EditarPerfilPage() {
       <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* Columna Izquierda - Tarjeta Perfil */}
         <div className="bg-white rounded-2xl shadow-lg p-6 flex flex-col items-center">
-          <div className="w-24 h-24 rounded-full bg-pink-600 text-white flex items-center justify-center text-3xl font-bold">
-            {nombre.charAt(0)}
+          <div className="relative">
+            {profileImage ? (
+              <img 
+                src={profileImage} 
+                alt="Perfil" 
+                className="w-24 h-24 rounded-full object-cover border-4 border-pink-600"
+              />
+            ) : (
+              <div className="w-24 h-24 rounded-full bg-pink-600 text-white flex items-center justify-center text-3xl font-bold">
+                {nombre.charAt(0) || 'U'}
+              </div>
+            )}
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploadingImage}
+              className="absolute bottom-0 right-0 bg-pink-600 text-white p-2 rounded-full hover:bg-pink-700 transition disabled:opacity-50"
+              title="Cambiar foto de perfil"
+            >
+              {uploadingImage ? (
+                <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></div>
+              ) : (
+                <FiCamera size={16} />
+              )}
+            </button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleImageUpload}
+              className="hidden"
+            />
           </div>
           <h2 className="mt-4 text-lg font-semibold">{nombre} {apellidos}</h2>
           <p className="text-sm text-gray-500">{programa}</p>
