@@ -1,6 +1,8 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import Login from './features/auth/login/pages/Login';
 import Register from './features/auth/register/pages/Register';
+import ForgotPassword from './features/auth/pages/ForgotPassword';
+import ResetPassword from './features/auth/pages/ResetPassword';
 import Projects from './pages/Projects';
 import VerifyCode from './features/auth/verifyCode/pages/VerifyCode';
 import Layout from './shared/components/Layout';
@@ -20,8 +22,11 @@ function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<Login />} />
+        <Route path="/account/login" element={<Login />} />
         <Route path="/account/register" element={<Register />} />
         <Route path="/account/verify-code" element={<VerifyCode />} />
+        <Route path="/account/forgot-password" element={<ForgotPassword />} />
+        <Route path="/account/reset-password" element={<ResetPassword />} />
         <Route path="/projects" element={<Projects />} />
 
         {/* Rutas con Layout */}

@@ -74,7 +74,8 @@ const ManageMembersModal: React.FC<ManageMembersModalProps> = ({
 
   return (
     <>
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          return (
+      <div className="fixed inset-0 bg-black bg-opacity-30 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fadeIn">
         <div className="max-w-2xl w-full bg-white rounded-lg shadow-lg overflow-hidden">
           {/* Header */}
           <div className="bg-gradient-to-r from-pink-500 to-pink-600 px-6 py-4 flex justify-between items-center">
@@ -202,7 +203,7 @@ const ManageMembersModal: React.FC<ManageMembersModalProps> = ({
 
       {/* Remove Member Confirmation Modal */}
       {memberToRemove && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60] p-4">
+        <div className="fixed inset-0 bg-black bg-opacity-30 backdrop-blur-sm flex items-center justify-center z-[60] p-4 animate-fadeIn">
           <div className="max-w-md w-full bg-white rounded-lg shadow-lg overflow-hidden">
             <div className="bg-gradient-to-r from-pink-500 to-pink-600 px-6 py-4 flex justify-between items-center">
               <h2 className="text-xl font-bold text-white">Advertencia</h2>

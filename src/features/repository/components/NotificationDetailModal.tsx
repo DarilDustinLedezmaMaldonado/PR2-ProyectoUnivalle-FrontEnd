@@ -34,7 +34,7 @@ const NotificationDetailModal: React.FC<NotificationDetailModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+    <div className="fixed inset-0 bg-black bg-opacity-30 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fadeIn">
       <div className="max-w-2xl w-full bg-white rounded-lg shadow-lg overflow-hidden">
         {/* Header */}
         <div className="bg-white px-6 py-4 border-b border-gray-200 flex justify-between items-center">
