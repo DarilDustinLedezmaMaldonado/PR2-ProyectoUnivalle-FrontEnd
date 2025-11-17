@@ -1,5 +1,6 @@
 import { JSX, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import api from "../utils/api";
 import {
   FiArrowLeft,
   FiEdit,
@@ -39,26 +40,36 @@ const VistaPerfil = () => {
   });
 
   useEffect(() => {
-    const user = JSON.parse(localStorage.getItem('user') || '{}');
-    const userId = user.id;
-    if (userId) {
-      fetch(`http://localhost:5000/api/users/${userId}`)
-        .then((res) => res.json())
-        .then((data) => {
-          setPerfil({
-            nombre: data.nombre || "",
-            apellido: data.apellido || "",
-            estado: data.estado || "",
-            profesion: data.profesion || "",
-            institucion: data.institucion || "",
-            ciudad: data.ciudad || "",
-            contacto: data.contacto || "",
-            hobbies: data.hobbies || [],
-            profileImage: data.profileImage || "",
-          });
-        })
-        .catch((err) => console.error("Error al cargar perfil:", err));
-    }
+    const loadProfile = async () => {
+      try {
+        const user = JSON.parse(localStorage.getItem('user') || '{}');
+        const userId = user.id;
+        
+        if (!userId) {
+          console.error('No se encontró ID de usuario');
+          return;
+        }
+
+        const response = await api.get(`/api/users/${userId}`);
+        const data = response.data;
+        
+        setPerfil({
+          nombre: data.nombre || "",
+          apellido: data.apellido || "",
+          estado: data.estado || "",
+          profesion: data.profesion || "",
+          institucion: data.institucion || "",
+          ciudad: data.ciudad || "",
+          contacto: data.contacto || "",
+          hobbies: data.hobbies || [],
+          profileImage: data.profileImage || "",
+        });
+      } catch (err) {
+        console.error("Error al cargar perfil:", err);
+      }
+    };
+
+    loadProfile();
   }, []);
 
   return (

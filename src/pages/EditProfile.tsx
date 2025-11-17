@@ -1,6 +1,7 @@
 // src/pages/EditarPerfilPage.tsx
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import api from "../utils/api";
 
 // Listas iniciales
 const universidades = [
@@ -25,20 +26,60 @@ export default function EditarPerfilPage() {
   const navigate = useNavigate();
 
   // Estados
-  const [nombre, setNombre] = useState("Pablo");
-  const [apellidos, setApellidos] = useState("Gutierrez");
-  const [username, setUsername] = useState("Pablito");
-  const [bio, setBio] = useState("Estudiante de Ingeniería de Sistemas apasionado por la tecnología y el desarrollo de software. Siempre aprendiendo algo nuevo.");
-  const [universidad, setUniversidad] = useState(universidades[1]); // Univalle por defecto
-  const [programa, setPrograma] = useState("Ingeniería de Sistemas");
-  const [semestre, setSemestre] = useState("6to Semestre");
+  const [nombre, setNombre] = useState("");
+  const [apellidos, setApellidos] = useState("");
+  const [username, setUsername] = useState("");
+  const [bio, setBio] = useState("");
+  const [universidad, setUniversidad] = useState(universidades[0]);
+  const [programa, setPrograma] = useState("");
+  const [semestre, setSemestre] = useState("");
   const [nuevoHobby, setNuevoHobby] = useState("");
-  const [hobbies, setHobbies] = useState(["Programación", "Lectura", "Música", "Deportes"]);
+  const [hobbies, setHobbies] = useState<string[]>([]);
   const [temaSeleccionado, setTemaSeleccionado] = useState("azul-morado");
   const [perfilPublico, setPerfilPublico] = useState(true);
   const [mostrarEmail, setMostrarEmail] = useState(false);
   const [notifRepos, setNotifRepos] = useState(true);
   const [notifInvitaciones, setNotifInvitaciones] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [userId, setUserId] = useState("");
+
+  // Cargar datos del usuario al montar
+  useEffect(() => {
+    const loadUserData = async () => {
+      try {
+        const user = JSON.parse(localStorage.getItem('user') || '{}');
+        const id = user.id;
+        
+        if (!id) {
+          console.error('No se encontró ID de usuario');
+          setLoading(false);
+          return;
+        }
+
+        setUserId(id);
+        
+        const response = await api.get(`/api/users/${id}`);
+        const userData = response.data;
+
+        // Cargar datos existentes
+        setNombre(userData.nombre || "");
+        setApellidos(userData.apellido || "");
+        setUsername(userData.username || "");
+        setBio(userData.estado || "");
+        setUniversidad(userData.institucion || universidades[0]);
+        setPrograma(userData.profesion || "");
+        setSemestre(userData.ciudad || "");
+        setHobbies(userData.hobbies || []);
+        
+        setLoading(false);
+      } catch (error) {
+        console.error('Error al cargar datos del usuario:', error);
+        setLoading(false);
+      }
+    };
+
+    loadUserData();
+  }, []);
 
   // Funciones
   const agregarHobby = () => {
@@ -52,25 +93,43 @@ export default function EditarPerfilPage() {
     setHobbies(hobbies.filter((h) => h !== hobby));
   };
 
-  const guardarCambios = () => {
-    // Aquí harías el fetch/PUT a tu backend
-    console.log("Guardado:", {
-      nombre,
-      apellidos,
-      username,
-      bio,
-      universidad,
-      programa,
-      semestre,
-      hobbies,
-      temaSeleccionado,
-      perfilPublico,
-      mostrarEmail,
-      notifRepos,
-      notifInvitaciones,
-    });
-    navigate("/profile");
+  const guardarCambios = async () => {
+    if (!userId) {
+      alert('No se pudo identificar el usuario');
+      return;
+    }
+
+    try {
+      await api.put(`/api/users/${userId}`, {
+        nombre,
+        apellido: apellidos,
+        estado: bio,
+        profesion: programa,
+        institucion: universidad,
+        ciudad: semestre,
+        contacto: username,
+        hobbies,
+        profileImage: `https://ui-avatars.com/api/?name=${nombre}+${apellidos}&background=be185d&color=fff&size=150`,
+      });
+
+      alert('✅ Perfil actualizado exitosamente');
+      navigate("/profile");
+    } catch (error) {
+      console.error('Error al guardar cambios:', error);
+      alert('❌ Error al actualizar el perfil. Intenta nuevamente.');
+    }
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-r from-blue-500 to-purple-600 p-6 flex items-center justify-center">
+        <div className="bg-white rounded-2xl shadow-lg p-8 text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-pink-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Cargando datos del perfil...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-r from-blue-500 to-purple-600 p-6">
