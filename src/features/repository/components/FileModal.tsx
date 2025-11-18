@@ -1,113 +1,50 @@
-import React, { useState,useCallback } from "react";
+import React, { useState } from "react";
 import { useUser } from "../../../context/useUser";
 import { uploadFile } from "../services/filesService";
-import { listFolders, createFolder } from "../services/foldersService";
-import { useDropzone } from "react-dropzone";
-import { AiOutlineCloudUpload } from "react-icons/ai";
-import { FiX, FiUpload, FiStar } from "react-icons/fi";
 
 interface ArchivoModalProps {
   onClose: () => void;
   repositoryId: string;
   onUploaded: () => void;
   initialFolderId?: string | null;
+  currentFolderName?: string | null;
 }
 
-const ArchivoModal: React.FC<ArchivoModalProps> = ({ onClose, repositoryId, onUploaded, initialFolderId }) => {
-  const [fileName, setFileName] = useState("");
+const ArchivoModal: React.FC<ArchivoModalProps> = ({ 
+  onClose, 
+  repositoryId, 
+  onUploaded, 
+  initialFolderId, 
+  currentFolderName 
+}) => {
+  const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [importance, setImportance] = useState("0");
+  const [selectedImportance, setSelectedImportance] = useState<string>("none");
   const [tags, setTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState("");
-  const [privacy, setPrivacy] = useState("private");
   const [file, setFile] = useState<File | null>(null);
-  const [hoverRating, setHoverRating] = useState(0);
+  const [fileName, setFileName] = useState("");
+  const [isSensitive, setIsSensitive] = useState(true);
   const [isUploading, setIsUploading] = useState(false);
-  const [folders, setFolders] = useState<any[]>([]);
-  const [loadingFolders, setLoadingFolders] = useState(false);
-  const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null);
-  const [showNewFolder, setShowNewFolder] = useState(false);
-  const [newFolderNameModal, setNewFolderNameModal] = useState('');
   const { user } = useUser();
 
-   const onDrop = useCallback((acceptedFiles: File[]) => {
-     if (acceptedFiles.length > 0) {
-       const selectedFile = acceptedFiles[0];
-       setFile(selectedFile);
-       setFileName(selectedFile.name);
-     }
-   }, []);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
 
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({
-    onDrop,
-    multiple: false,
-    maxFiles: 1,
-  });
-
-  const handleSubmit = async () => {
-    if (!file) return alert("Selecciona un archivo.");
-    setIsUploading(true);
-    const formData = new FormData();
-    formData.append("title", fileName);
-    formData.append("author", user?.username || "");
-    formData.append("description", description);
-    formData.append("importance", importance);
-    formData.append("tags", tags.join(","));
-    formData.append("privacy", privacy);
-    formData.append("file", file);
-    formData.append("repositoryId", repositoryId);
-    if (selectedFolderId) {
-      formData.append('folderId', selectedFolderId);
-    }
-
-    try {
-      await uploadFile(formData);
-      alert("Archivo subido exitosamente.");
-      onUploaded();
-      onClose();
-    } catch (err) {
-      console.error(err);
-      alert("Error al subir el archivo.");
-    }
-    finally {
-      setIsUploading(false);
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      const selectedFile = e.target.files[0];
+      setFile(selectedFile);
+      setFileName(selectedFile.name);
+      if (!title) setTitle(selectedFile.name);
     }
   };
 
-  const fetchFolders = async () => {
-    if (!repositoryId) return;
-    setLoadingFolders(true);
-    try {
-      const res = await listFolders(repositoryId, null);
-      setFolders(res || []);
-    } catch (err) {
-      setFolders([]);
-    } finally {
-      setLoadingFolders(false);
-    }
-  };
-
-  const handleCreateFolder = async () => {
-    if (!newFolderNameModal.trim()) return;
-    try {
-      const created = await createFolder(newFolderNameModal.trim(), repositoryId, null);
-      // refresh folders and select new one
-      await fetchFolders();
-      const newId = created?.folder?._id || created?.folder?.id;
-      if (newId) setSelectedFolderId(newId);
-      setNewFolderNameModal('');
-      setShowNewFolder(false);
-    } catch (err) {
-      // ignore for now
-    }
-  };
-
-  // fetch folders on mount / repository change
-  React.useEffect(() => {
-    fetchFolders();
-    // reset selection when repository changes
-    setSelectedFolderId(initialFolderId ?? null);
-  }, [repositoryId, initialFolderId]);
+  const importanceColors = [
+    { color: 'bg-red-500', label: 'Alta', value: 'high', ring: 'ring-red-300' },
+    { color: 'bg-yellow-400', label: 'Media', value: 'medium', ring: 'ring-yellow-300' },
+    { color: 'bg-green-400', label: 'Baja', value: 'low', ring: 'ring-green-300' },
+    { color: 'bg-gray-400', label: 'Ninguna', value: 'none', ring: 'ring-gray-300' }
+  ];
 
   const handleAddTag = () => {
     if (tagInput.trim() !== "" && !tags.includes(tagInput.trim())) {
@@ -120,201 +57,209 @@ const ArchivoModal: React.FC<ArchivoModalProps> = ({ onClose, repositoryId, onUp
     setTags(tags.filter((t) => t !== tagToRemove));
   };
 
-  const handleRemoveFile = () => {
-    setFile(null);
-    setFileName("");
+  const handleSubmit = async () => {
+    if (!file) return alert("Selecciona un archivo.");
+    if (!title.trim()) return alert("El título es obligatorio.");
+    
+    setIsUploading(true);
+    const formData = new FormData();
+    formData.append("title", title);
+    formData.append("author", user?.username || "");
+    formData.append("description", description);
+    formData.append("importance", selectedImportance);
+    formData.append("tags", tags.join(","));
+    formData.append("privacy", isSensitive ? "private" : "public");
+    formData.append("file", file);
+    formData.append("repositoryId", repositoryId);
+    if (initialFolderId) {
+      formData.append('folderId', initialFolderId);
+    }
+
+    try {
+      await uploadFile(formData);
+      alert("Archivo subido exitosamente.");
+      onUploaded();
+      onClose();
+    } catch (err) {
+      console.error(err);
+      alert("Error al subir el archivo.");
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   return (
-    <div className="fixed inset-0 bg-[rgba(0,0,0,0.4)] flex items-center justify-center p-4 z-50">
-        <div className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6">
-                <div className="flex justify-between items-center mb-6">
-                    <h2 className="text-2xl font-bold text-[var(--color-primary)]">Subir nuevo archivo</h2>
-                    <button
-                    onClick={onClose}
-                    className="text-gray-500 hover:text-gray-700 transition-colors"
-                    >
-                    <FiX className="text-2xl" />
-                    </button>
-                </div>
-                <div className="mb-6">
-                    <label className="block mb-1 text-sm font-medium text-gray-700">Seleccionar archivo</label>
-                    <div
-                    {...getRootProps()}
-                    className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors
-                        ${isDragActive ? "border-[var(--color-primarytwo)] bg-[var(--color-primaryfaint)]" : "border-gray-300 hover:border-[var(--color-primarytwo)]"}`}
-                    >
-                    <input {...getInputProps()} />
-                    <AiOutlineCloudUpload className="text-4xl mx-auto mb-4 text-[var(--color-primarytwo)]" />
-                    <p className="text-gray-600">
-                        {isDragActive ? "Suelta el archivo aquí" : "Arrastra un archivo aquí o haz clic para seleccionar"}
-                    </p>
-                    </div>
+    <div className="fixed inset-0 bg-black bg-opacity-30 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fadeIn">
+      <div className="max-w-xl w-full rounded-2xl shadow-lg bg-gray-200 p-8 relative">
+        {/* Botón de cerrar */}
+        <button 
+          onClick={onClose}
+          className="absolute top-6 right-6 text-gray-400 hover:text-gray-600 text-2xl"
+        >
+          &times;
+        </button>
 
-                    {file && (
-                    <div className="mt-4 flex items-center gap-2 p-2 bg-gray-50 rounded">
-                        <div className="w-10 h-10 bg-gray-200 rounded flex items-center justify-center">
-                            <FiUpload className="text-gray-600" />
-                        </div>
-                        <div className="flex-1">
-                        <p className="text-sm font-medium text-gray-700">{file.name}</p>
-                        <p className="text-xs text-gray-500">{(file.size / 1024 / 1024).toFixed(2)} MB</p>
-                        </div>
-                        <button
-                        onClick={handleRemoveFile}
-                        className="text-red-500 hover:text-red-700"
-                        >
-                        <FiX />
-                        </button>
-                    </div>
-                    )}
-                </div>
+        {/* Título */}
+        <h2 className="text-2xl font-semibold text-center mb-2 text-gray-900">
+          Subir Nuevo Archivo
+        </h2>
 
-                <div className="mb-6">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Descripción
-                    </label>
-                    <textarea
-                    value={description}
-                    onChange={(e) => setDescription(e.target.value)}
-                    placeholder="Describe tu archivo"
-                    className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    rows={4}
-                    />
-                </div>
+        {/* Mostrar carpeta destino si existe */}
+        {initialFolderId && currentFolderName && (
+          <p className="text-center text-sm text-gray-600 mb-6">
+            Carpeta destino: <span className="font-semibold text-[var(--color-primary)]">{currentFolderName}</span>
+          </p>
+        )}
 
-                <div className="mb-6">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Importancia
-                    </label>
-                    <div className="flex gap-2">
-                    {[1, 2, 3, 4, 5].map((star) => (
-                        <button
-                        key={star}
-                        onClick={() => setImportance(star.toString())}
-                        onMouseEnter={() => setHoverRating(star)}
-                        onMouseLeave={() => setHoverRating(0)}
-                        className={`text-2xl ${star <= (hoverRating || Number(importance)) ? "text-yellow-400" : "text-gray-300"}
-                            hover:text-yellow-400 transition-colors`}
-                        >
-                        <FiStar className="fill-current" />
-                        </button>
-                    ))}
-                    </div>
-                </div>
+        {!initialFolderId && (
+          <p className="text-center text-sm text-gray-600 mb-6">
+            Se subirá a la raíz del repositorio
+          </p>
+        )}
 
-                <div className="mb-6">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Etiquetas
-                    </label>
-                    <div className="flex flex-wrap gap-2 mb-2">
-                    {tags.map(tag => (
-                        <span
-                        key={tag}
-                        className="bg-[var(--color-primaryfaint)] text-[var(--color-primary)] px-3 py-1 rounded-full text-sm flex items-center gap-1"
-                        >
-                        {tag}
-                        <button onClick={() => handleRemoveTag(tag)} className="hover:text-[var(--color-primary-hover)]">
-                            <FiX />
-                        </button>
-                        </span>
-                    ))}
-                    </div>
-                    <div className="flex gap-2">
-                    <input
-                        type="text"
-                        value={tagInput}
-                        onChange={(e) => setTagInput(e.target.value)}
-                        onKeyDown={(e) => e.key === "Enter" && handleAddTag()}
-                        placeholder="Añadir etiqueta"
-                        className="flex-1 px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    />
-                    <button
-                        onClick={handleAddTag}
-                        disabled={!tagInput || tags.length >= 5}
-                        className="px-4 py-2 bg-[var(--color-primary)] text-white rounded-lg hover:bg-[var(--color-primary-hover)] disabled:opacity-50"
-                    >
-                        Añadir
-                    </button>
-                    </div>
-                </div>
+        {/* Campo Título */}
+        <label className="block text-sm font-medium text-gray-800 mb-2" htmlFor="titulo">
+          Título
+        </label>
+        <input 
+          id="titulo" 
+          type="text" 
+          placeholder="Ej. Proyecto Ecofriendly" 
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          className="w-full mb-4 px-4 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-pink-500 focus:outline-none"
+        />
 
-                <div className="mb-5">
-                    <label className="block mb-1 text-sm font-medium text-gray-700">Privacidad</label>
-                    <div className="flex gap-4">
-                        <button type="button" onClick={() => setPrivacy("public")}
-                            className={`w-full py-2 rounded-lg font-semibold border ${privacy === "public" ? "bg-[var(--color-primarytwo)] text-white" : "border-[var(--color-primarytwo)] text-[var(--color-primary)]"}`}>
-                            Público
-                        </button>
-                        <button type="button" onClick={() => setPrivacy("private")}
-                            className={`w-full py-2 rounded-lg font-semibold border ${privacy === "private" ? "bg-[var(--color-primarytwo)] text-white" : "border-[var(--color-primarytwo)] text-[var(--color-primary)]"}`}>
-                            Privado
-                        </button>
-                    </div>
-                </div>
+        {/* Campo Descripción */}
+        <label className="block text-sm font-medium text-gray-800 mb-2" htmlFor="descripcion">
+          Descripción
+        </label>
+        <textarea 
+          id="descripcion" 
+          rows={2} 
+          placeholder="Este proyecto ayuda en los bosques de Bolivia"
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          className="w-full mb-4 px-4 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-pink-500 focus:outline-none resize-none"
+        />
 
-                <div className="mb-6">
-                    <label className="block mb-1 text-sm font-medium text-gray-700">Carpeta destino</label>
-                    <div className="flex gap-2 items-center">
-                      <select
-                        value={selectedFolderId ?? ''}
-                        onChange={(e) => setSelectedFolderId(e.target.value || null)}
-                        className="p-2 rounded-md border border-[var(--color-primarytwo)] text-[var(--color-primarytwo)]"
-                        disabled={loadingFolders}
-                      >
-                        {loadingFolders ? (
-                          <option>...Cargando carpetas</option>
-                        ) : (
-                          <>
-                            <option value="">Raíz (sin carpeta)</option>
-                            {folders.map(f => (
-                              <option key={f._id || f.id} value={f._id || f.id}>{f.name}</option>
-                            ))}
-                          </>
-                        )}
-                      </select>
-
-                      {!showNewFolder ? (
-                        <button onClick={() => setShowNewFolder(true)} className="px-3 py-2 bg-white border border-[var(--color-primary)] text-[var(--color-primary)] rounded-md hover:bg-[var(--color-primary)] hover:text-white transition-colors">Nueva carpeta</button>
-                      ) : (
-                        <div className="flex items-center gap-2">
-                          <input value={newFolderNameModal} onChange={(e) => setNewFolderNameModal(e.target.value)} placeholder="Nombre carpeta" className="p-2 border rounded-md" />
-                          <button onClick={handleCreateFolder} className="px-3 py-2 bg-[var(--color-primary)] text-white rounded-md">Crear</button>
-                          <button onClick={() => { setShowNewFolder(false); setNewFolderNameModal(''); }} className="px-3 py-2 border rounded-md">Cancelar</button>
-                        </div>
-                      )}
-                    </div>
-                </div>
-
-                <div className="mt-8 flex justify-end gap-4">
-                    <button
-                    onClick={onClose}
-                    className="px-6 py-2 text-gray-700 hover:text-gray-900 transition-colors"
-                    >
-                    Cancelar
-                    </button>
-                    <button
-                    onClick={handleSubmit}
-                    disabled={isUploading}
-                    className="px-6 py-2 bg-[var(--color-primary)] text-white rounded-lg hover:bg-[var(--color-primary-hover)] disabled:opacity-50
-                        flex items-center gap-2"
-                    >
-                    {isUploading ? (
-                        <>
-                        <span className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent" />
-                        Subiendo...
-                        </>
-                    ) : (
-                        <>Subir Archivo</>
-                    )}
-                    </button>
-                </div>
-
-            </div>
+        {/* Importancia */}
+        <label className="block text-sm font-medium text-gray-800 mb-2">
+          Importancia
+        </label>
+        <div className="flex items-center gap-4 mb-4">
+          {importanceColors.map((imp) => (
+            <button
+              key={imp.value}
+              type="button"
+              onClick={() => setSelectedImportance(imp.value)}
+              className={`w-6 h-6 rounded-full ${imp.color} hover:ring-2 ${imp.ring} transition-all ${
+                selectedImportance === imp.value ? `ring-2 ${imp.ring}` : ''
+              }`}
+              title={imp.label}
+            />
+          ))}
         </div>
+
+        {/* Tags */}
+        <label className="block text-sm font-medium text-gray-800 mb-2" htmlFor="tags">
+          Tags
+        </label>
+        <input 
+          id="tags" 
+          type="text" 
+          placeholder="Ej. Ciencias, Biología"
+          value={tagInput}
+          onChange={(e) => setTagInput(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              e.preventDefault();
+              handleAddTag();
+            }
+          }}
+          className="w-full mb-3 px-4 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-pink-500 focus:outline-none"
+        />
+        <div className="flex gap-2 mb-4 flex-wrap">
+          {tags.map((tag) => (
+            <span 
+              key={tag}
+              className="bg-gray-100 px-3 py-1 rounded-full text-gray-800 text-sm flex items-center"
+            >
+              {tag}
+              <button 
+                onClick={() => handleRemoveTag(tag)}
+                className="ml-1 text-gray-400 hover:text-pink-500"
+              >
+                &times;
+              </button>
+            </span>
+          ))}
+        </div>
+
+        {/* Selector de archivo */}
+        <label className="block text-sm font-medium text-gray-800 mb-2" htmlFor="archivo">
+          Seleccionar Archivo
+        </label>
+        <div className="relative mb-4">
+          <input 
+            id="archivo" 
+            type="text" 
+            placeholder={fileName || "Haz clic para seleccionar un archivo"}
+            value={fileName}
+            readOnly
+            onClick={() => fileInputRef.current?.click()}
+            className="w-full px-4 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-pink-500 focus:outline-none cursor-pointer bg-white"
+          />
+          <input
+            ref={fileInputRef}
+            type="file"
+            onChange={handleFileSelect}
+            className="hidden"
+          />
+        </div>
+
+        {/* Es Sensible */}
+        <div className="mb-8">
+          <label className="inline-flex items-center cursor-pointer">
+            <input 
+              type="checkbox" 
+              checked={isSensitive}
+              onChange={(e) => setIsSensitive(e.target.checked)}
+              className="form-checkbox h-4 w-4 rounded text-pink-600" 
+            />
+            <span className="ml-2 text-sm text-gray-800 font-medium">Es Sensible</span>
+          </label>
+          <p className="text-xs text-gray-600 ml-6">
+            Activa esta función si quieres que tu archivo no se vea públicamente
+          </p>
+        </div>
+        
+        {/* Botones */}
+        <div className="flex justify-end gap-4 mt-2">
+          <button 
+            onClick={onClose}
+            disabled={isUploading}
+            className="px-8 py-2 rounded-md bg-pink-500 text-white font-semibold hover:bg-pink-600 transition disabled:opacity-50"
+          >
+            Cancelar
+          </button>
+          <button 
+            onClick={handleSubmit}
+            disabled={isUploading}
+            className="px-8 py-2 rounded-md bg-pink-700 text-white font-semibold hover:bg-pink-800 transition disabled:opacity-50 flex items-center gap-2"
+          >
+            {isUploading ? (
+              <>
+                <span className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent" />
+                Subiendo...
+              </>
+            ) : (
+              'Aceptar'
+            )}
+          </button>
+        </div>
+      </div>
     </div>
-    
   );
 };
 

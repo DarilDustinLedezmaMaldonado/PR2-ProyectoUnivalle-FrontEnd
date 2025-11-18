@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useLocation, useNavigate } from 'react-router-dom';
 import { FiX, FiUpload, FiFolder, FiPlus, FiUserPlus, FiUsers } from "react-icons/fi";
 import { debounce } from "lodash";
@@ -6,7 +6,7 @@ import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import FileCard from "../components/FileCard";
 import { File } from "../types/file"; 
-import { fetchPersonalRepositoryId, fetchFilesByRepositoryId, uploadFile } from "../services/filesService";
+import { fetchPersonalRepositoryId, fetchFilesByRepositoryId } from "../services/filesService";
 import { listFolders, createFolder, getFolderAncestors } from "../services/foldersService";
 import ArchivoModal from "../components/FileModal";
 import InviteUserModal from "../components/InviteUserModal";
@@ -17,12 +17,12 @@ import api from '../../../utils/api';
     const [showModal, setShowModal] = useState(false);
     const [files, setFiles] = useState<File[]>([]);
     const [allFiles, setAllFiles] = useState<File[]>([]);
-    const [folders, setFolders] = useState<any[]>([]);
-    const [folderId, setFolderId] = useState<string | null>(null);
+  const [folders, setFolders] = useState<any[]>([]);
+  const [folderId, setFolderId] = useState<string | null>(null);
+  const [currentFolderName, setCurrentFolderName] = useState<string | null>(null);
   const [creatingFolder, setCreatingFolder] = useState(false);
   const [newFolderName, setNewFolderName] = useState('');
     const [breadcrumbs, setBreadcrumbs] = useState<Array<{_id: string | null, name: string}>>([{_id: null, name: 'Raíz'}]);
-    const fileInputRef = useRef<HTMLInputElement | null>(null);
     const [searchTerm, setSearchTerm] = useState("");
     const [dateRange, setDateRange] = useState<[Date | null, Date | null]>([null, null]);
     const [fileType, setFileType] = useState("todos");
@@ -107,52 +107,24 @@ import api from '../../../utils/api';
     try {
       if (!folderIdParam) {
         setBreadcrumbs([{ _id: null, name: 'Raíz' }]);
+        setCurrentFolderName(null);
         return;
       }
       const res = await getFolderAncestors(folderIdParam);
       // res is array root->current
       const mapped = res.map((f: any) => ({ _id: f._id, name: f.name }));
       setBreadcrumbs([{ _id: null, name: 'Raíz' }, ...mapped]);
-      // set current folder name (not stored separately)
+      // set current folder name (last one in the chain)
+      if (mapped.length > 0) {
+        setCurrentFolderName(mapped[mapped.length - 1].name);
+      }
     } catch (err) {
       setBreadcrumbs([{ _id: null, name: 'Raíz' }]);
+      setCurrentFolderName(null);
     }
   };
 
-  const triggerQuickUpload = () => {
-    if (!fileInputRef.current) return;
-    fileInputRef.current.value = '';
-    fileInputRef.current.click();
-  };
 
-  const handleQuickFileChange = async (e: any) => {
-    const files = e.target.files;
-    if (!files || files.length === 0) return;
-    const f = files[0];
-    if (!repositoryId) return alert('Repositorio no definido');
-    setLoading(true);
-    try {
-      const formData = new FormData();
-      formData.append('file', f);
-      formData.append('title', f.name);
-      formData.append('author', '');
-      formData.append('description', '');
-      formData.append('importance', 'none');
-      formData.append('tags', '');
-      formData.append('privacy', 'private');
-      formData.append('repositoryId', repositoryId);
-      if (folderId) formData.append('folderId', folderId);
-
-      await uploadFile(formData);
-      alert('Archivo subido correctamente a la carpeta');
-      await handleUploaded();
-    } catch (err) {
-      console.error(err);
-      alert('Error subiendo archivo');
-    } finally {
-      setLoading(false);
-    }
-  };
 
     // Obtener el repositoryId
   useEffect(() => {
@@ -195,7 +167,9 @@ import api from '../../../utils/api';
 
     const enterFolder = async (folder: any) => {
       const newFolderId = folder._id || folder.id;
+      const newFolderName = folder.name;
       setFolderId(newFolderId);
+      setCurrentFolderName(newFolderName);
       // update url
       navigate(`${location.pathname}?repoId=${repositoryId}&folderId=${newFolderId}`);
       await Promise.all([fetchAndSetFiles(repositoryId!, newFolderId), fetchAndSetFolders(repositoryId!, newFolderId)]);
@@ -334,16 +308,9 @@ import api from '../../../utils/api';
             repositoryId={repositoryId}
             onUploaded={handleUploaded}
             initialFolderId={folderId ?? null}
+            currentFolderName={currentFolderName}
           />
         )}
-
-        {/* Hidden input used for quick upload into current folder */}
-        <input
-          ref={fileInputRef}
-          type="file"
-          className="hidden"
-          onChange={handleQuickFileChange}
-        />
 
         {/* Folders toolbar and list */}
         <div className="mb-6">
@@ -396,16 +363,6 @@ import api from '../../../utils/api';
                   <FiPlus />
                   Nueva carpeta
                 </button>
-              )}
-
-              {/* Quick upload to current folder (visible when folderId is set) */}
-              {folderId && (
-                <>
-                  <button onClick={triggerQuickUpload} className="flex items-center gap-2 px-3 py-2 bg-[var(--color-primary)] text-white rounded-md hover:bg-[var(--color-primary-hover)] transition-colors">
-                    <FiUpload />
-                    Subir a esta carpeta
-                  </button>
-                </>
               )}
             </div>
           </div>

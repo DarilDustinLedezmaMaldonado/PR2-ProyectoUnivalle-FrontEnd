@@ -69,7 +69,8 @@ useEffect(() => {
     };
 
     const handleUploaded = async () => {
-      console.log("Aca se tendria que refrescar la lista de archivos");
+      if (!repositoryId) return;
+      await fetchAndSetFiles(repositoryId);
     };
   
     return (
@@ -153,6 +154,8 @@ useEffect(() => {
             onClose={() => setShowModal(false)}
             repositoryId={repositoryId}
             onUploaded={handleUploaded}
+            initialFolderId={null}
+            currentFolderName={null}
           />
         )}
   
