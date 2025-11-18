@@ -102,7 +102,7 @@ const ArchivoModal: React.FC<ArchivoModalProps> = ({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-30 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fadeIn">
-      <div className="max-w-xl w-full rounded-2xl shadow-lg bg-gray-200 p-8 relative">
+      <div className="max-w-xl w-full rounded-2xl shadow-lg bg-gray-200 p-8 relative animate-slideUp">
         {/* Botón de cerrar */}
         <button 
           onClick={onClose}
