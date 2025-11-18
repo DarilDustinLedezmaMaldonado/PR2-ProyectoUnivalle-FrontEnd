@@ -3,6 +3,7 @@ import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../utils/api";
 import { FiCamera } from "react-icons/fi";
+import { useTheme, type ThemeType } from "../context/ThemeContext";
 
 // Listas iniciales
 const universidades = [
@@ -25,6 +26,7 @@ const temas = [
 
 export default function EditarPerfilPage() {
   const navigate = useNavigate();
+  const { theme, setTheme } = useTheme();
 
   // Estados
   const [nombre, setNombre] = useState("");
@@ -36,7 +38,7 @@ export default function EditarPerfilPage() {
   const [semestre, setSemestre] = useState("");
   const [nuevoHobby, setNuevoHobby] = useState("");
   const [hobbies, setHobbies] = useState<string[]>([]);
-  const [temaSeleccionado, setTemaSeleccionado] = useState("azul-morado");
+  const [temaSeleccionado, setTemaSeleccionado] = useState<ThemeType>(theme);
   const [perfilPublico, setPerfilPublico] = useState(true);
   const [mostrarEmail, setMostrarEmail] = useState(false);
   const [notifRepos, setNotifRepos] = useState(true);
@@ -75,7 +77,9 @@ export default function EditarPerfilPage() {
         setSemestre(userData.ciudad || "");
         setHobbies(userData.hobbies || []);
         setProfileImage(userData.profileImage || "");
-        setTemaSeleccionado(userData.theme || "azul-morado");
+        const userTheme = userData.theme || "azul-morado";
+        setTemaSeleccionado(userTheme);
+        setTheme(userTheme as any);
         
         setLoading(false);
       } catch (error) {
@@ -97,6 +101,11 @@ export default function EditarPerfilPage() {
 
   const eliminarHobby = (hobby: string) => {
     setHobbies(hobbies.filter((h) => h !== hobby));
+  };
+
+  const handleThemeChange = (newTheme: ThemeType) => {
+    setTemaSeleccionado(newTheme);
+    setTheme(newTheme);
   };
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -295,7 +304,7 @@ export default function EditarPerfilPage() {
               <div
                 key={t.id}
                 className={`h-16 rounded-xl cursor-pointer ${t.color} ${temaSeleccionado === t.id ? "ring-4 ring-pink-500" : ""}`}
-                onClick={() => setTemaSeleccionado(t.id)}
+                onClick={() => handleThemeChange(t.id as ThemeType)}
               />
             ))}
           </div>

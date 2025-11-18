@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import './Sidebar.css';
 import { FiHome, FiFolder, FiLogOut, FiBell, FiUser, FiUsers } from 'react-icons/fi';
 import { useNavigate } from "react-router-dom";
+import api from '../../utils/api';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -10,6 +11,7 @@ interface SidebarProps {
 
 const SidebarNavigation: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
   const navigate = useNavigate();
+  const [profileImage, setProfileImage] = useState("");
 
   const handleLogout = () => {
     // Elimina el usuario en localStorage
@@ -40,6 +42,21 @@ const SidebarNavigation: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) =>
 
   const user = JSON.parse(localStorage.getItem('user') || '{}');
 
+  useEffect(() => {
+    const loadProfileImage = async () => {
+      try {
+        if (user.id) {
+          const response = await api.get(`/api/users/${user.id}`);
+          setProfileImage(response.data.profileImage || "");
+        }
+      } catch (error) {
+        console.error('Error al cargar imagen de perfil:', error);
+      }
+    };
+
+    loadProfileImage();
+  }, [user.id]);
+
   return (
     <>
       {/* Fondo oscuro solo en móvil cuando está abierto */}
@@ -60,15 +77,21 @@ const SidebarNavigation: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) =>
           onClick={handleNavigateProfile}
         >
           <div className="relative w-24 h-24 mb-3 overflow-hidden rounded-full ring-4 ring-gray-100 dark:ring-gray-700">
-            <img
-              src="https://t4.ftcdn.net/jpg/00/64/67/63/360_F_64676383_LdbmhiNM6Ypzb3FM4PPuFP9rHe7ri8Ju.jpg"
-              alt="Profile"
-              className="w-full h-full object-cover"
-              onError={(e) => {
-                (e.target as HTMLImageElement).src =
-                  "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=facearea&facepad=2&w=256&h=256&q=80";
-              }}
-            />
+            {profileImage ? (
+              <img
+                src={profileImage}
+                alt="Profile"
+                className="w-full h-full object-cover"
+                onError={(e) => {
+                  (e.target as HTMLImageElement).src =
+                    "https://ui-avatars.com/api/?name=" + (user.username || "User") + "&background=be185d&color=fff&size=200";
+                }}
+              />
+            ) : (
+              <div className="w-full h-full bg-gradient-to-br from-pink-600 to-purple-600 flex items-center justify-center text-white text-3xl font-bold">
+                {(user.username || "U").charAt(0).toUpperCase()}
+              </div>
+            )}
           </div>
           <h2 className="text-lg font-bold text-gray-800 dark:text-white">{user.username || "Usuario"}</h2>
           <p className="text-sm text-gray-500 dark:text-gray-400">{user.email || "correo@ejemplo.com"}</p>

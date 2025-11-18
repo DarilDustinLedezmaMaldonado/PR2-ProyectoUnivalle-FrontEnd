@@ -9,8 +9,8 @@ console.log('🚀 Aplicación iniciando...');
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <UserProvider>
+    <ThemeProvider>
       <App />
-    </UserProvider>     
+    </ThemeProvider>
   </StrictMode>,
 )
