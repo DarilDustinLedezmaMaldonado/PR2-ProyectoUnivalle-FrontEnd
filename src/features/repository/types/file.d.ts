@@ -2,6 +2,8 @@ export interface File {
   _id: number;
   filename: string;
   uploadDate: string;
+  url?: string;
+  contentType?: string;
   metadata: {
     title: string;
     author: string;
@@ -9,5 +11,6 @@ export interface File {
     tags: string[];
     importance: string;
     privacy: string;
+    url?: string;
   };
 }

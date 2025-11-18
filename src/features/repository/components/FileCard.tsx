@@ -1,20 +1,26 @@
 import { FiFile, FiStar } from "react-icons/fi";
 import { File } from "../types/file";
-import { getImportanceColor } from "../utils/fileHelpers"; // Importa la función getImportanceColor
+import { getImportanceColor } from "../utils/fileHelpers";
+import { useState } from "react";
+import FileViewer from "./FileViewer";
 
 interface FileCardProps {
   file: File;
 }
 
 const FileCard: React.FC<FileCardProps> = ({ file }) => {
+  const [showViewer, setShowViewer] = useState(false);
+
   return (
-    <div
-      className={`relative bg-gradient-to-b ${getImportanceColor(
-        Number(file.metadata.importance)
-      )} bg-white p-4 rounded-lg shadow-md hover:shadow-lg transition-shadow border border-gray-100 overflow-hidden`}
-      role="article"
-      tabIndex={0}
-    >
+    <>
+      <div
+        onClick={() => setShowViewer(true)}
+        className={`relative bg-gradient-to-b ${getImportanceColor(
+          Number(file.metadata.importance)
+        )} bg-white p-4 rounded-lg shadow-md hover:shadow-lg transition-shadow border border-gray-100 overflow-hidden cursor-pointer`}
+        role="article"
+        tabIndex={0}
+      >
 
       <div className="flex items-start justify-between w-full">
         <div className="flex items-center gap-2 w-[calc(100%-80px)] overflow-hidden">
@@ -62,6 +68,11 @@ const FileCard: React.FC<FileCardProps> = ({ file }) => {
         </span>
       </div>
     </div>
+
+    {showViewer && (
+      <FileViewer file={file} onClose={() => setShowViewer(false)} />
+    )}
+  </>
   );
 };
 
