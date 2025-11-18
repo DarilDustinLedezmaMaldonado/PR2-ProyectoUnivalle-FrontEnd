@@ -1,5 +1,4 @@
 import React, { useState } from "react";
-import { useUser } from "../../../context/useUser";
 import { uploadFile } from "../services/filesService";
 
 interface ArchivoModalProps {
@@ -26,7 +25,19 @@ const ArchivoModal: React.FC<ArchivoModalProps> = ({
   const [fileName, setFileName] = useState("");
   const [isSensitive, setIsSensitive] = useState(true);
   const [isUploading, setIsUploading] = useState(false);
-  const { user } = useUser();
+
+  // Obtener usuario desde localStorage
+  const getUserFromStorage = () => {
+    const userStr = localStorage.getItem('user');
+    if (userStr) {
+      try {
+        return JSON.parse(userStr);
+      } catch {
+        return null;
+      }
+    }
+    return null;
+  };
 
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
@@ -62,6 +73,7 @@ const ArchivoModal: React.FC<ArchivoModalProps> = ({
     if (!title.trim()) return alert("El título es obligatorio.");
     
     setIsUploading(true);
+    const user = getUserFromStorage();
     const formData = new FormData();
     formData.append("title", title);
     formData.append("author", user?.username || "");
