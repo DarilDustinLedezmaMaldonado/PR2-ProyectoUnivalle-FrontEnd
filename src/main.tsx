@@ -3,7 +3,7 @@ import { createRoot } from 'react-dom/client'
 
 import './index.css'
 import App from './App.tsx'
-import { UserProvider } from './context/UserProvider.tsx'
+import { ThemeProvider } from './context/ThemeContext.tsx'
 
 console.log('🚀 Aplicación iniciando...');
 
